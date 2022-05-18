@@ -1,0 +1,8 @@
+/db/
+/.idea/
+/.vscode/
+.env
+forum-security.code-workspace
+/internal/web/assets/images/post
+forumsecurity.csr
+forumsecurity.key

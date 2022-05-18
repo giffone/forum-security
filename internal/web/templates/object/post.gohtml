@@ -1,0 +1,65 @@
+{{define "one_post"}}
+    <div class="post-text {{.Liked}}">
+        {{if (.Image)}}
+            <a href="{{.Image}}"><img src="{{.Image}}" alt="{{.Title}}" class="left"></a>
+        {{end}}
+        {{.Body}}
+    </div>
+{{end}}
+
+{{define "one_post_title"}}
+    <div class="title">
+        <a href="/read/?post={{.ID}}" class="title-main"><h3>{{.Title}}</h3></a>
+        {{if ne .Name ""}}
+            <div><b>{{.Name}}</b>{{.Created | dateForum | printf " on %s" }}</div>
+        {{else}}
+            <p>&nbsp;</p>
+        {{end}}
+    </div>
+{{end}}
+
+{{define "posts"}}
+    <div class="post-wrapper">
+        {{range .}}
+            {{template "one_post_title" .}}
+            {{template "one_post" .}}
+            <div class="line"></div>
+            {{template "categories_post" .}}
+            {{template "ratio" .}}
+            <div class="line-end"></div>
+        {{end}}
+    </div>
+{{end}}
+
+{{define "post_create"}}
+    <div id="create-post">
+        <div class="post-wrapper-create">
+            <form action="/post" method="post" class="form post" enctype="multipart/form-data">
+                <a href="#" class="close">&times;</a>
+                <h2>Create Post</h2>
+                <div class="input-group">
+                    <input type="text" name="title" id="title" required>
+                    <label for="title">title</label>
+                </div>
+                <div class="input-group">
+                    <textarea name="body text" id="body text" placeholder="enter text here ..." rows="8" required></textarea>
+                </div>
+                <div class="upload-group">
+                    <label for="body image">Choose image to upload (jpeg, jpg, png, gif) up to 20Mb:</label>
+                    <input type="file" name="body image" id="body image" accept=".png, .gif, .jpg, .jpeg">
+                </div>
+                <div class="category-choose">
+                    <ul class="category-list">
+                        {{range .Category}}
+                            <li>
+                                <input type="checkbox" name="categories" value="{{.ID}}" id="category-{{.Name}}">
+                                <label for="category-{{.Name}}">{{.Name}}</label>
+                            </li>
+                        {{end}}
+                    </ul>
+                </div>
+                <input type="submit" value="Submit" class="submit-btn">
+            </form>
+        </div>
+    </div>
+{{end}}
