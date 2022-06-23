@@ -6,6 +6,6 @@ WORKDIR /web
 
 COPY . .
 
-RUN go build cmd/forumsqlite/main.go
+RUN go build --tags sqlite_userauth cmd/forumsqlite/main.go 
 
 CMD ["./main"]

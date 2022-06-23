@@ -3,13 +3,15 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/object/model"
 )
 
 type New interface {
-	Connect() *Configuration
+	Driver() *config.DriverConf
 	DataBase(ctx context.Context) *sql.DB
 	Query() *object.Query
 }

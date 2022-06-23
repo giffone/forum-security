@@ -5,14 +5,14 @@ import (
 	"database/sql"
 	"log"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 )
 
 func TxBegin(ctx context.Context, db *sql.DB) (*sql.Tx, object.Status) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, object.ByCodeAndLog(constant.Code500,
+		return nil, object.ByCodeAndLog(config.Code500,
 			err, "transaction begin:")
 	}
 	return tx, nil

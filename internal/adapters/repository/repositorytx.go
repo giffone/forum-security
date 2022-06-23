@@ -4,28 +4,28 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/object/model"
 )
 
 type repoTx struct {
-	conf   *Configuration
+	conf   *config.DriverConf
 	schema *object.Query
 	db     *sql.DB
 }
 
 func NewRepoTx(ctx context.Context, new New) Repo {
 	return &repoTx{
-		conf:   new.Connect(),
+		conf:   new.Driver(),
 		schema: new.Query(),
 		db:     new.DataBase(ctx),
 	}
 }
 
 func (r *repoTx) Create(ctx context.Context, d dto.DTO) (int, object.Status) {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	// make query for db
@@ -41,14 +41,14 @@ func (r *repoTx) Create(ctx context.Context, d dto.DTO) (int, object.Status) {
 	// apply query
 	res, err := tx.ExecContext(ctx2, q.Query, q.Fields...)
 	if err != nil {
-		return 0, object.ByCodeAndLog(constant.Code500,
+		return 0, object.ByCodeAndLog(config.Code500,
 			err, "create:")
 	}
 
 	// get id of new record
 	id, err := res.LastInsertId()
 	if err != nil {
-		return 0, object.ByCodeAndLog(constant.Code500,
+		return 0, object.ByCodeAndLog(config.Code500,
 			err, "create: last inserted id:")
 	}
 
@@ -58,7 +58,7 @@ func (r *repoTx) Create(ctx context.Context, d dto.DTO) (int, object.Status) {
 }
 
 func (r *repoTx) Delete(ctx context.Context, d dto.DTO) object.Status {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	q := d.Delete().MakeQuery(r.schema)
@@ -71,7 +71,7 @@ func (r *repoTx) Delete(ctx context.Context, d dto.DTO) object.Status {
 
 	_, err := tx.ExecContext(ctx2, q.Query, q.Fields...)
 	if err != nil {
-		return object.ByCodeAndLog(constant.Code500,
+		return object.ByCodeAndLog(config.Code500,
 			err, "delete:")
 	}
 	// close transaction
@@ -80,7 +80,7 @@ func (r *repoTx) Delete(ctx context.Context, d dto.DTO) object.Status {
 }
 
 func (r *repoTx) GetList(ctx context.Context, m model.Models) object.Status {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	q := m.GetList().MakeQuery(r.schema)
@@ -108,7 +108,7 @@ func (r *repoTx) GetList(ctx context.Context, m model.Models) object.Status {
 }
 
 func (r *repoTx) GetOne(ctx context.Context, m model.Model) object.Status {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	q := m.Get().MakeQuery(r.schema)

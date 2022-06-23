@@ -4,21 +4,21 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/object/model"
 )
 
 type repo struct {
-	conf   *Configuration
+	conf   *config.DriverConf
 	schema *object.Query
 	db     *sql.DB
 }
 
 func NewRepo(ctx context.Context, new New) Repo {
 	return &repo{
-		conf:   new.Connect(),
+		conf:   new.Driver(),
 		schema: new.Query(),
 		db:     new.DataBase(ctx),
 	}
@@ -31,14 +31,14 @@ func (r *repo) Create(ctx context.Context, d dto.DTO) (int, object.Status) {
 	stmt, err := r.db.PrepareContext(ctx, q.Query)
 	if err != nil {
 		return 0,
-			object.ByCodeAndLog(constant.Code500,
+			object.ByCodeAndLog(config.Code500,
 				err, "create: stmt")
 	}
 	// apply query
 	res, err := stmt.ExecContext(ctx, q.Fields...)
 	if err != nil {
 		return 0,
-			object.ByCodeAndLog(constant.Code500,
+			object.ByCodeAndLog(config.Code500,
 				err, "create: exec")
 	}
 
@@ -46,13 +46,13 @@ func (r *repo) Create(ctx context.Context, d dto.DTO) (int, object.Status) {
 	id, err := res.LastInsertId()
 	if err != nil {
 		return 0,
-			object.ByCodeAndLog(constant.Code500,
+			object.ByCodeAndLog(config.Code500,
 				err, "create: last inserted id")
 	}
 	err = stmt.Close()
 	if err != nil {
 		return 0,
-			object.ByCodeAndLog(constant.Code500,
+			object.ByCodeAndLog(config.Code500,
 				err, "create: close stmt")
 	}
 	return int(id), nil
@@ -63,17 +63,17 @@ func (r *repo) Delete(ctx context.Context, d dto.DTO) object.Status {
 	q := d.Delete().MakeQuery(r.schema)
 	stmt, err := r.db.PrepareContext(ctx, q.Query)
 	if err != nil {
-		return object.ByCodeAndLog(constant.Code500,
+		return object.ByCodeAndLog(config.Code500,
 			err, "delete: stmt")
 	}
 	_, err = stmt.ExecContext(ctx, q.Fields...)
 	if err != nil {
-		return object.ByCodeAndLog(constant.Code500,
+		return object.ByCodeAndLog(config.Code500,
 			err, "delete")
 	}
 	err = stmt.Close()
 	if err != nil {
-		return object.ByCodeAndLog(constant.Code500,
+		return object.ByCodeAndLog(config.Code500,
 			err, "delete: close stmt")
 	}
 	return nil

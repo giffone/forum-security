@@ -1,17 +1,17 @@
 package model
 
 import (
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 )
 
 type Comments struct {
 	Slice []*Comment
 	St    *object.Settings
-	Ck    *object.Cookie
+	Ck    *object.CookieInfo
 }
 
-func NewComments(st *object.Settings, ck *object.Cookie) *Comments {
+func NewComments(st *object.Settings, ck *object.CookieInfo) *Comments {
 	c := new(Comments)
 	if st == nil {
 		c.St = &object.Settings{
@@ -21,7 +21,7 @@ func NewComments(st *object.Settings, ck *object.Cookie) *Comments {
 		c.St = st
 	}
 	if ck == nil {
-		c.Ck = new(object.Cookie)
+		c.Ck = new(object.CookieInfo)
 	} else {
 		c.Ck = ck
 	}
@@ -32,51 +32,51 @@ func (c *Comments) MakeKeys(key string, data ...interface{}) {
 	if key != "" {
 		c.St.Key[key] = data
 	} else {
-		c.St.Key[constant.KeyComment] = []interface{}{0}
+		c.St.Key[config.KeyComment] = []interface{}{0}
 	}
 }
 
 func (c *Comments) GetList() *object.QuerySettings {
 	qs := new(object.QuerySettings)
-	if value, ok := c.St.Key[constant.KeyPost]; ok {
-		qs.QueryName = constant.QueSelectCommentsBy
+	if value, ok := c.St.Key[config.KeyPost]; ok {
+		qs.QueryName = config.QueSelectCommentsBy
 		qs.QueryFields = []interface{}{
-			constant.TabComments,
-			constant.FieldPost,
+			config.TabComments,
+			config.FieldPost,
 		}
 		if value == nil {
 			qs.Fields = []interface{}{c.Ck.Post}
 		} else {
 			qs.Fields = value
 		}
-	} else if value, ok := c.St.Key[constant.KeyUser]; ok {
-		qs.QueryName = constant.QueSelectCommentsBy
+	} else if value, ok := c.St.Key[config.KeyUser]; ok {
+		qs.QueryName = config.QueSelectCommentsBy
 		qs.QueryFields = []interface{}{
-			constant.TabComments,
-			constant.FieldUser,
+			config.TabComments,
+			config.FieldUser,
 		}
 		if value == nil {
 			qs.Fields = []interface{}{c.Ck.User}
 		} else {
 			qs.Fields = value
 		}
-	} else if value, ok := c.St.Key[constant.KeyRated]; ok {
-		qs.QueryName = constant.QueSelectCommentsRatedBy
+	} else if value, ok := c.St.Key[config.KeyRated]; ok {
+		qs.QueryName = config.QueSelectCommentsRatedBy
 		qs.QueryFields = []interface{}{
-			constant.TabCommentsLikes,
-			constant.FieldUser,
+			config.TabCommentsLikes,
+			config.FieldUser,
 		}
 		if value == nil {
 			qs.Fields = []interface{}{c.Ck.User}
 		} else {
 			qs.Fields = value
 		}
-	} else if value, ok := c.St.Key[constant.KeyID]; ok {
-		qs.QueryName = constant.QueSelect
+	} else if value, ok := c.St.Key[config.KeyID]; ok {
+		qs.QueryName = config.QueSelect
 		qs.QueryFields = []interface{}{
-			constant.TabComments,
-			constant.TabComments,
-			constant.FieldID,
+			config.TabComments,
+			config.TabComments,
+			config.FieldID,
 		}
 		if value == nil {
 			qs.Fields = []interface{}{0}
@@ -90,7 +90,7 @@ func (c *Comments) GetList() *object.QuerySettings {
 func (c *Comments) NewList() []interface{} {
 	comment := new(Comment)
 	c.Slice = append(c.Slice, comment)
-	if _, ok := c.St.Key[constant.KeyRated]; ok {
+	if _, ok := c.St.Key[config.KeyRated]; ok {
 		return []interface{}{
 			&comment.ID,
 			&comment.Name,
@@ -99,7 +99,7 @@ func (c *Comments) NewList() []interface{} {
 			&comment.Post,
 			&comment.Liked,
 		}
-	} else if _, ok := c.St.Key[constant.KeyID]; ok {
+	} else if _, ok := c.St.Key[config.KeyID]; ok {
 		return []interface{}{
 			&comment.ID,
 		}
@@ -131,14 +131,14 @@ func (c *Comments) PostOrCommentID(index int) int {
 
 func (c *Comments) Add(key string, index int, data interface{}) {
 	switch key {
-	case constant.KeyLike:
+	case config.KeyLike:
 		c.Slice[index].Likes = data
-	case constant.KeyRated:
+	case config.KeyRated:
 		c.Slice[index].Liked = data
 	}
 }
 
-func (c *Comments) Cookie() *object.Cookie {
+func (c *Comments) Cookie() *object.CookieInfo {
 	return c.Ck
 }
 
@@ -147,9 +147,9 @@ func (c *Comments) Settings() *object.Settings {
 }
 
 func (c *Comments) KeyRole() string {
-	return constant.KeyComment
+	return config.KeyComment
 }
 
 func (c *Comments) KeyLiked() string {
-	return constant.KeyCommentRated
+	return config.KeyCommentRated
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/giffone/forum-security/internal/adapters/repository"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/service"
@@ -25,12 +25,12 @@ func NewService(repo repository.Repo) service.FileMaker {
 }
 
 func (fm *sFileMaker) CreateFile(ctx context.Context, d *dto.FileMaker) object.Status {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	file, err := os.Create(d.Path)
 	if err != nil {
-		return object.ByCodeAndLog(constant.Code500,
+		return object.ByCodeAndLog(config.Code500,
 			err, "create file")
 	}
 	_, err = io.Copy(file, bytes.NewReader(d.Src.Body))
@@ -39,7 +39,7 @@ func (fm *sFileMaker) CreateFile(ctx context.Context, d *dto.FileMaker) object.S
 	}
 	if err != nil {
 		os.Remove(file.Name())
-		return object.ByCodeAndLog(constant.Code500,
+		return object.ByCodeAndLog(config.Code500,
 			err, "create file: read or close")
 	}
 	// for web need to cut path

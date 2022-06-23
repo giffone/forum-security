@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/giffone/forum-security/internal/adapters/api"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/object/model"
@@ -32,11 +32,11 @@ func NewHandler(sPost service.Post, sCategory service.Category,
 }
 
 func (ha *hAccount) Register(ctx context.Context, router *http.ServeMux, session api.Middleware) {
-	router.HandleFunc(constant.URLAccount, session.CheckSession(ctx, ha.ByUser))
-	router.HandleFunc(constant.URLAccountRatio, session.CheckSession(ctx, ha.CreateLike))
+	router.HandleFunc(config.URLAccount, session.CheckSession(ctx, ha.ByUser))
+	router.HandleFunc(config.URLAccountRatio, session.CheckSession(ctx, ha.CreateLike))
 }
 
-func (ha *hAccount) ByUser(ctx context.Context, ck *object.Cookie, sts object.Status,
+func (ha *hAccount) ByUser(ctx context.Context, ck *object.CookieInfo, sts object.Status,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	log.Println(r.Method, " ", r.URL.Path)
@@ -45,7 +45,7 @@ func (ha *hAccount) ByUser(ctx context.Context, ck *object.Cookie, sts object.St
 		return
 	}
 	if r.Method != "GET" {
-		api.Message(w, object.ByCode(constant.Code405))
+		api.Message(w, object.ByCode(config.Code405))
 		return
 	}
 	// clear unused postID
@@ -54,11 +54,11 @@ func (ha *hAccount) ByUser(ctx context.Context, ck *object.Cookie, sts object.St
 	ha.get(ctx, ck, w)
 }
 
-func (ha *hAccount) CreateLike(ctx context.Context, ck *object.Cookie, sts object.Status,
+func (ha *hAccount) CreateLike(ctx context.Context, ck *object.CookieInfo, sts object.Status,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	log.Println(r.Method, " ", r.URL.Path)
-	ctx, cancel := context.WithTimeout(ctx, constant.TimeLimit)
+	ctx, cancel := context.WithTimeout(ctx, config.TimeLimit10s)
 	defer cancel()
 	// check errors in cookie
 	if sts != nil {
@@ -66,12 +66,12 @@ func (ha *hAccount) CreateLike(ctx context.Context, ck *object.Cookie, sts objec
 		return
 	}
 	if r.Method != "POST" {
-		api.Message(w, object.ByCode(constant.Code405))
+		api.Message(w, object.ByCode(config.Code405))
 		return
 	}
 	// need session always to continue
 	if !ck.Session {
-		api.Message(w, object.ByText(nil, constant.AccessDenied))
+		api.Message(w, object.ByText(nil, config.AccessDenied))
 		return
 	}
 	// create DTO with a new rate
@@ -87,13 +87,13 @@ func (ha *hAccount) CreateLike(ctx context.Context, ck *object.Cookie, sts objec
 		api.Message(w, sts)
 		return
 	}
-	redirect := r.PostFormValue(constant.KeyLink)
-	http.Redirect(w, r, constant.URLAccount+redirect, constant.Code302)
+	redirect := r.PostFormValue(config.KeyLink)
+	http.Redirect(w, r, config.URLAccount+redirect, config.Code302)
 	// ha.get(ctx, ck, w)
 }
 
-func (ha *hAccount) get(ctx context.Context, ck *object.Cookie, w http.ResponseWriter) {
-	ctx, cancel := context.WithTimeout(ctx, constant.TimeLimit)
+func (ha *hAccount) get(ctx context.Context, ck *object.CookieInfo, w http.ResponseWriter) {
+	ctx, cancel := context.WithTimeout(ctx, config.TimeLimit10s)
 	defer cancel()
 	// parse
 	pe, sts := api.NewParseExecute("account").Parse()
@@ -104,13 +104,13 @@ func (ha *hAccount) get(ctx context.Context, ck *object.Cookie, w http.ResponseW
 	//
 	pe.Data["Acc"] = true
 	// link for "form action" submit
-	pe.Data["RatioLink"] = constant.URLAccountRatio
+	pe.Data["RatioLink"] = config.URLAccountRatio
 	// insert session
 	pe.Data["Session"] = ck.Session
 	// create new model posts
 	posts := model.NewPosts(nil, ck)
 	// make keys for sort posts
-	posts.MakeKeys(constant.KeyUser)
+	posts.MakeKeys(config.KeyUser)
 	// insert posts
 	pe.Data["Posts"], sts = ha.sPost.Get(ctx, posts)
 	if sts != nil {
@@ -120,7 +120,7 @@ func (ha *hAccount) get(ctx context.Context, ck *object.Cookie, w http.ResponseW
 	// create new model posts
 	postsRated := model.NewPosts(nil, ck)
 	// make keys for sort posts
-	postsRated.MakeKeys(constant.KeyRated)
+	postsRated.MakeKeys(config.KeyRated)
 	// insert posts
 	pe.Data["PostsRated"], sts = ha.sPost.Get(ctx, postsRated)
 	if sts != nil {
@@ -133,7 +133,7 @@ func (ha *hAccount) get(ctx context.Context, ck *object.Cookie, w http.ResponseW
 	// create new model comments
 	comments := model.NewComments(st, ck)
 	// make keys for sort posts
-	comments.MakeKeys(constant.KeyUser)
+	comments.MakeKeys(config.KeyUser)
 	// insert posts
 	pe.Data["Comments"], sts = ha.sComment.Get(ctx, comments)
 	if sts != nil {
@@ -143,7 +143,7 @@ func (ha *hAccount) get(ctx context.Context, ck *object.Cookie, w http.ResponseW
 	// create new model comments
 	commentsRated := model.NewComments(st.ClearKey(), ck)
 	// make keys for sort posts
-	commentsRated.MakeKeys(constant.KeyRated)
+	commentsRated.MakeKeys(config.KeyRated)
 	// insert posts
 	pe.Data["CommentsRated"], sts = ha.sComment.Get(ctx, commentsRated)
 	if sts != nil {
@@ -161,5 +161,5 @@ func (ha *hAccount) get(ctx context.Context, ck *object.Cookie, w http.ResponseW
 	// insert method to show - one post or all posts
 	pe.Data["AllPost"] = posts.St.AllPost
 	// execute
-	pe.Execute(w, constant.Code200)
+	pe.Execute(w, config.Code200)
 }

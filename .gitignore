@@ -1,8 +1,12 @@
-/db/
-/.idea/
-/.vscode/
 .env
 forum-security.code-workspace
+/.idea/
+/.vscode/
+/db/
+/privat/
+/secure/db/.env
+/secure/cert/localhost.crt
+/secure/cert/localhost.csr
+/secure/cert/localhost.key
+/secure/auhthentication/.env
 /internal/web/assets/images/post
-forumsecurity.csr
-forumsecurity.key

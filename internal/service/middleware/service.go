@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/giffone/forum-security/internal/adapters/repository"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/object/model"
@@ -43,7 +43,7 @@ func (smw *sMiddleware) CheckSession(ctx context.Context, d *dto.Session) (inter
 		return nil, sts
 	}
 	// middleware not match
-	if session.UUID != d.Obj.Ck.SessionUUID {
+	if session.UUID != d.Obj.Ck.UUID {
 		log.Printf("uuid did not match db: %s dto: %v", session.UUID, d.Obj.Ck)
 		return nil, nil
 	}
@@ -58,12 +58,12 @@ func (smw *sMiddleware) GetID(ctx context.Context, d *dto.CheckID) (int, object.
 	var value interface{}
 	if d.Atoi {
 		if d.IDString == "" {
-			return 0, object.ByCodeAndLog(constant.Code500,
+			return 0, object.ByCodeAndLog(config.Code500,
 				nil, "check id: atoi = true, but IDString empty")
 		}
 		idInt, err := strconv.Atoi(d.IDString)
 		if err != nil || idInt == 0 {
-			return 0, object.ByCodeAndLog(constant.Code400,
+			return 0, object.ByCodeAndLog(config.Code400,
 				err, "check id: atoi")
 		}
 		value = idInt
@@ -77,7 +77,7 @@ func (smw *sMiddleware) GetID(ctx context.Context, d *dto.CheckID) (int, object.
 		return 0, sts
 	}
 	if who.ID == 0 {
-		return 0, object.ByCode(constant.Code400)
+		return 0, object.ByCode(config.Code400)
 	}
 	return who.ID, nil
 }

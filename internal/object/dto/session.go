@@ -1,9 +1,10 @@
 package dto
 
 import (
-	"github.com/giffone/forum-security/internal/constant"
-	"github.com/giffone/forum-security/internal/object"
 	"time"
+
+	"github.com/giffone/forum-security/internal/config"
+	"github.com/giffone/forum-security/internal/object"
 )
 
 type Session struct {
@@ -11,7 +12,7 @@ type Session struct {
 	Obj    object.Obj
 }
 
-func NewSession(st *object.Settings, sts *object.Statuses, ck *object.Cookie) *Session {
+func NewSession(st *object.Settings, sts *object.Statuses, ck *object.CookieInfo) *Session {
 	s := new(Session)
 	s.Obj.NewObjects(st, sts, ck)
 	return s
@@ -23,16 +24,16 @@ func (s *Session) Add(date time.Time) {
 
 func (s *Session) Create() *object.QuerySettings {
 	return &object.QuerySettings{
-		QueryName: constant.QueInsert3,
+		QueryName: config.QueInsert3,
 		QueryFields: []interface{}{
-			constant.TabSessions,
-			constant.FieldUser,
-			constant.FieldUUID,
-			constant.FieldExpire,
+			config.TabSessions,
+			config.FieldUser,
+			config.FieldUUID,
+			config.FieldExpire,
 		},
 		Fields: []interface{}{
 			s.Obj.Ck.User,
-			s.Obj.Ck.SessionUUID,
+			s.Obj.Ck.UUID,
 			s.Expire,
 		},
 	}
@@ -40,11 +41,11 @@ func (s *Session) Create() *object.QuerySettings {
 
 func (s *Session) Delete() *object.QuerySettings {
 	return &object.QuerySettings{
-		QueryName: constant.QueDeleteBy,
+		QueryName: config.QueDeleteBy,
 		QueryFields: []interface{}{
-			constant.TabSessions,
-			constant.TabSessions,
-			constant.FieldUser,
+			config.TabSessions,
+			config.TabSessions,
+			config.FieldUser,
 		},
 		Fields: []interface{}{
 			s.Obj.Ck.User,

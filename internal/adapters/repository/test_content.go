@@ -3,7 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"golang.org/x/crypto/bcrypt"
 	"log"
@@ -31,8 +31,8 @@ func (li *LoremIpsum) Run(db *sql.DB, q *object.Query) {
 }
 
 func (li *LoremIpsum) tUsers(db *sql.DB, q *object.Query) {
-	que := fmt.Sprintf(q.Schema[constant.QueInsert5], constant.TabUsers,
-		constant.FieldLogin, constant.FieldName, constant.FieldPassword, constant.FieldEmail, constant.FieldCreated)
+	que := fmt.Sprintf(q.Schema[config.QueInsert5], config.TabUsers,
+		config.FieldLogin, config.FieldName, config.FieldPassword, config.FieldEmail, config.FieldCreated)
 	pass, _ := bcrypt.GenerateFromPassword([]byte("12345Aa"), bcrypt.MinCost)
 	sPass := string(pass)
 	db.Exec(que, "blackbeard", "Blackbeard", sPass, "user2@mail.ru", time.Now())
@@ -46,7 +46,7 @@ func (li *LoremIpsum) tUsers(db *sql.DB, q *object.Query) {
 	db.Exec(que, "barbarossa", "the Barbarossa", sPass, "user10@mail.ru", time.Now())
 	// and admin
 
-	queCount := fmt.Sprintf(q.Schema[constant.QueSelectCount], constant.TabUsers)
+	queCount := fmt.Sprintf(q.Schema[config.QueSelectCount], config.TabUsers)
 	count := db.QueryRow(queCount)
 	err := count.Scan(&li.users)
 	if err != nil {
@@ -65,7 +65,7 @@ func (li *LoremIpsum) tPosts(db *sql.DB, q *object.Query) {
 	li.limitComments = limit
 	li.limitLikes = limit
 	// count categories
-	queCount := fmt.Sprintf(q.Schema[constant.QueSelectCount], constant.TabCategories)
+	queCount := fmt.Sprintf(q.Schema[config.QueSelectCount], config.TabCategories)
 	count := db.QueryRow(queCount)
 	err := count.Scan(&li.categories)
 	if err != nil {
@@ -73,16 +73,16 @@ func (li *LoremIpsum) tPosts(db *sql.DB, q *object.Query) {
 		return
 	}
 	// insert posts
-	que := fmt.Sprintf(q.Schema[constant.QueInsert4], constant.TabPosts,
-		constant.FieldUser, constant.FieldTitle, constant.FieldBody, constant.FieldCreated)
-	queCat := fmt.Sprintf(q.Schema[constant.QueInsert2], constant.TabPostsCategories,
-		constant.FieldPost, constant.FieldCategory)
-	queComm := fmt.Sprintf(q.Schema[constant.QueInsert4], constant.TabComments,
-		constant.FieldUser, constant.FieldPost, constant.FieldBody, constant.FieldCreated)
-	queLike := fmt.Sprintf(q.Schema[constant.QueInsert3], constant.TabPostsLikes,
-		constant.FieldUser, constant.FieldPost, constant.FieldLike)
-	queCommLike := fmt.Sprintf(q.Schema[constant.QueInsert4], constant.TabCommentsLikes,
-		constant.FieldUser, constant.FieldComment, constant.FieldLike, constant.FieldCreated)
+	que := fmt.Sprintf(q.Schema[config.QueInsert4], config.TabPosts,
+		config.FieldUser, config.FieldTitle, config.FieldBody, config.FieldCreated)
+	queCat := fmt.Sprintf(q.Schema[config.QueInsert2], config.TabPostsCategories,
+		config.FieldPost, config.FieldCategory)
+	queComm := fmt.Sprintf(q.Schema[config.QueInsert4], config.TabComments,
+		config.FieldUser, config.FieldPost, config.FieldBody, config.FieldCreated)
+	queLike := fmt.Sprintf(q.Schema[config.QueInsert3], config.TabPostsLikes,
+		config.FieldUser, config.FieldPost, config.FieldLike)
+	queCommLike := fmt.Sprintf(q.Schema[config.QueInsert4], config.TabCommentsLikes,
+		config.FieldUser, config.FieldComment, config.FieldLike, config.FieldCreated)
 	var pIgnore []int
 	i := 0
 	for i != needPostGen {

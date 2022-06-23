@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
-	"github.com/giffone/forum-security/internal/object"
 	"net/http"
+	"time"
+
+	"github.com/giffone/forum-security/internal/object"
 )
 
 type Handler interface {
@@ -15,7 +17,12 @@ type Middleware interface { // middleware for handlers
 	Skip(ctx context.Context, fn func(context.Context, Middleware,
 		http.ResponseWriter, *http.Request)) http.HandlerFunc
 	CheckSession(ctx context.Context, fn func(context.Context,
-		*object.Cookie, object.Status, http.ResponseWriter,
+		*object.CookieInfo, object.Status, http.ResponseWriter,
 		*http.Request)) http.HandlerFunc
 	EndSession(w http.ResponseWriter) object.Status
+}
+
+type Banned interface {
+	Add(key string, banTill time.Time)
+	UnlockBan(deadline time.Time, key string) (exist bool, expire bool)
 }

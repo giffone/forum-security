@@ -4,27 +4,22 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
+
 	"github.com/giffone/forum-security/internal/adapters/repository"
 	"github.com/giffone/forum-security/internal/adapters/repository/sqlitedb/schema"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
-	"log"
 )
 
 type MySql struct {
 	Db *sql.DB
-	c  *repository.Configuration
+	c  *config.DriverConf
 	q  *object.Query
 }
 
-func (ms *MySql) Connect() *repository.Configuration {
-	ms.c = &repository.Configuration{
-		Name:       "database-mysql.db",
-		Path:       "db/database-mysql.db",
-		PathB:      "db/backup/database-mysql.db",
-		Driver:     "mysql",
-		Port:       ":3306",
-		Connection: "admin:admin@tcp(localhost:3306)/forum_db", //<username>:<pw>@tcp(<HOST>:<port>)/<dbname>
-	}
+func (ms *MySql) Driver() *config.DriverConf {
+	ms.c = config.NewMysql()
 	return ms.c
 }
 
@@ -61,7 +56,7 @@ func (ms *MySql) make(ctx context.Context) {
 		log.Fatalf("function begin tx: %v", err)
 	}
 
-	for _, table := range repository.MakeTables() {
+	for _, table := range config.MakeTables() {
 		ms.tables(tx, ctx, table)
 	}
 

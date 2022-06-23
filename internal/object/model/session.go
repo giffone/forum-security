@@ -1,9 +1,10 @@
 package model
 
 import (
-	"github.com/giffone/forum-security/internal/constant"
-	"github.com/giffone/forum-security/internal/object"
 	"time"
+
+	"github.com/giffone/forum-security/internal/config"
+	"github.com/giffone/forum-security/internal/object"
 )
 
 type Session struct {
@@ -11,10 +12,10 @@ type Session struct {
 	UUID   string
 	Expire time.Time
 	St     *object.Settings // settings
-	Ck     *object.Cookie
+	Ck     *object.CookieInfo
 }
 
-func NewSession(st *object.Settings, ck *object.Cookie) *Session {
+func NewSession(st *object.Settings, ck *object.CookieInfo) *Session {
 	s := new(Session)
 	if st == nil {
 		s.St = &object.Settings{
@@ -24,7 +25,7 @@ func NewSession(st *object.Settings, ck *object.Cookie) *Session {
 		s.St = st
 	}
 	if ck == nil {
-		s.Ck = new(object.Cookie)
+		s.Ck = new(object.CookieInfo)
 	} else {
 		s.Ck = ck
 	}
@@ -33,14 +34,14 @@ func NewSession(st *object.Settings, ck *object.Cookie) *Session {
 
 func (s *Session) Get() *object.QuerySettings {
 	return &object.QuerySettings{
-		QueryName: constant.QueSelectSessionBy,
+		QueryName: config.QueSelectSessionBy,
 		QueryFields: []interface{}{
-			constant.FieldUser,
-			constant.FieldUUID,
+			config.FieldUser,
+			config.FieldUUID,
 		},
 		Fields: []interface{}{
 			s.Ck.User,
-			s.Ck.SessionUUID,
+			s.Ck.UUID,
 		},
 	}
 }

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/giffone/forum-security/internal/adapters/repository"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/object/model"
@@ -36,13 +36,13 @@ func NewService(repo repository.Repo, sCategory service.Category,
 }
 
 func (sp *sPost) Create(ctx context.Context, d *dto.Post) (int, object.Status) {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 	lCat := len(d.Categories.Slice)
 	// check valid categories
 	if lCat > 0 {
 		for i := 0; i < lCat; i++ {
-			categories := dto.NewCheckIDAtoi(constant.KeyCategory, d.Categories.Slice[i])
+			categories := dto.NewCheckIDAtoi(config.KeyCategory, d.Categories.Slice[i])
 			idWho, sts := sp.sMiddleware.GetID(ctx, categories)
 			if sts != nil {
 				return 0, sts
@@ -72,11 +72,11 @@ func (sp *sPost) Create(ctx context.Context, d *dto.Post) (int, object.Status) {
 	if d.Image != nil {
 		log.Println("need to make image")
 		// create key with new post_id
-		d.Image.MakeKeys(constant.KeyPost, id)
+		d.Image.MakeKeys(config.KeyPost, id)
 		// path
 		now := time.Now().Format("2006-01-02")
 		t := strings.Replace(d.Image.Src.MIME, "/", ".", 1)
-		d.Image.Path = fmt.Sprintf("%s/%s-post-id-%d-%s", constant.PathImagePost, now, id, t)
+		d.Image.Path = fmt.Sprintf("%s/%s-post-id-%d-%s", config.PathImagePost, now, id, t)
 		sts := sp.sFile.CreateFile(ctx, d.Image)
 		if sts != nil {
 			return 0, sts
@@ -90,7 +90,7 @@ func (sp *sPost) Delete(ctx context.Context, id int) *object.Statuses {
 }
 
 func (sp *sPost) Get(ctx context.Context, m model.Models) (interface{}, object.Status) {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	sts := sp.repo.GetList(ctx2, m)
@@ -127,7 +127,7 @@ func (sp *sPost) Get(ctx context.Context, m model.Models) (interface{}, object.S
 }
 
 func (sp *sPost) GetChan(ctx context.Context, m model.Models) (interface{}, object.Status) {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	sts := sp.repo.GetList(ctx2, m)

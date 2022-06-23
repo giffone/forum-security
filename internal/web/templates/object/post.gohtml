@@ -21,12 +21,14 @@
 {{define "posts"}}
     <div class="post-wrapper">
         {{range .}}
-            {{template "one_post_title" .}}
-            {{template "one_post" .}}
-            <div class="line"></div>
-            {{template "categories_post" .}}
-            {{template "ratio" .}}
-            <div class="line-end"></div>
+            <div>
+                {{template "one_post_title" .}}
+                {{template "one_post" .}}
+                <div class="line"></div>
+                {{template "categories_post" .}}
+                {{template "ratio" .}}
+                <div class="line-end"></div>
+            </div>
         {{end}}
     </div>
 {{end}}

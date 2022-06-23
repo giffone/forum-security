@@ -13,20 +13,19 @@ import (
 	"strings"
 
 	"github.com/giffone/forum-security/internal/adapters/api"
-	"github.com/giffone/forum-security/internal/adapters/authentication"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/service"
 )
 
 type hAuth struct {
-	auth        *authentication.Auth
+	auth        *config.Auth
 	sUser       service.User
 	sMiddleware service.Middleware
 }
 
-func NewHandler(auth *authentication.Auth, service service.User, sMiddleware service.Middleware) api.Handler {
+func NewHandler(auth *config.Auth, service service.User, sMiddleware service.Middleware) api.Handler {
 	return &hAuth{
 		auth:        auth,
 		sUser:       service,
@@ -35,12 +34,12 @@ func NewHandler(auth *authentication.Auth, service service.User, sMiddleware ser
 }
 
 func (ha *hAuth) Register(ctx context.Context, router *http.ServeMux, s api.Middleware) {
-	router.HandleFunc(constant.URLLoginGithub, ha.loginGithub)
-	router.HandleFunc(constant.URLLoginGithubCallback, s.Skip(ctx, ha.loginGithubCallback))
-	router.HandleFunc(constant.URLLoginFacebook, ha.loginFacebook)
-	router.HandleFunc(constant.URLLoginFacebookCallback, s.Skip(ctx, ha.loginFacebookCallback))
-	router.HandleFunc(constant.URLLoginGoogle, ha.loginGoogle)
-	router.HandleFunc(constant.URLLoginGoogleCallback, s.Skip(ctx, ha.loginGoogleCallback))
+	router.HandleFunc(config.URLLoginGithub, ha.loginGithub)
+	router.HandleFunc(config.URLLoginGithubCallback, s.Skip(ctx, ha.loginGithubCallback))
+	router.HandleFunc(config.URLLoginFacebook, ha.loginFacebook)
+	router.HandleFunc(config.URLLoginFacebookCallback, s.Skip(ctx, ha.loginFacebookCallback))
+	router.HandleFunc(config.URLLoginGoogle, ha.loginGoogle)
+	router.HandleFunc(config.URLLoginGoogleCallback, s.Skip(ctx, ha.loginGoogleCallback))
 }
 
 type social struct {
@@ -50,7 +49,7 @@ type social struct {
 func (ha *hAuth) login(w http.ResponseWriter, r *http.Request, sc social) {
 	log.Println(r.Method, " ", r.URL.Path)
 	if r.Method != "GET" {
-		api.Message(w, object.ByCode(constant.Code405))
+		api.Message(w, object.ByCode(config.Code405))
 		return
 	}
 	urlBuf := bytes.Buffer{}
@@ -67,10 +66,10 @@ func (ha *hAuth) login(w http.ResponseWriter, r *http.Request, sc social) {
 		"scope":         {sc.scope},
 		"state":         {ha.auth.StateToken},
 	}
+	log.Printf("redirect url is %s", sc.redirect)
+	log.Printf("url is %s", urlBuf.String())
 	urlBuf.WriteString(u.Encode())
-	urlStr := urlBuf.String()
-	log.Printf("url is %s", urlStr) //////////////////////////////////// delete
-	http.Redirect(w, r, urlStr, constant.Code301)
+	http.Redirect(w, r, urlBuf.String(), config.Code301)
 }
 
 func (ha *hAuth) callback(ctx context.Context, ses api.Middleware,
@@ -78,13 +77,13 @@ func (ha *hAuth) callback(ctx context.Context, ses api.Middleware,
 ) {
 	log.Println(r.Method, " ", r.URL.Path)
 	if r.Method != "GET" {
-		api.Message(w, object.ByCode(constant.Code405))
+		api.Message(w, object.ByCode(config.Code405))
 		return
 	}
 	u := r.URL.Query()
 	state := u.Get("state")
 	if state != ha.auth.StateToken {
-		api.Message(w, object.ByText(nil, constant.InvalidState,
+		api.Message(w, object.ByText(nil, config.InvalidState,
 			state))
 		return
 	}
@@ -100,7 +99,7 @@ func (ha *hAuth) callback(ctx context.Context, ses api.Middleware,
 	log.Printf("token is %s", token)
 
 	var data []byte
-	if sc.name == constant.KeyFacebook || sc.name == constant.KeyGoogle {
+	if sc.name == config.KeyFacebook || sc.name == config.KeyGoogle {
 		// method, where token adding to url "&access_token=......"
 		sc.userURL += url.QueryEscape(token)
 		data, sts = getFacebookData(sc.userURL)
@@ -108,7 +107,7 @@ func (ha *hAuth) callback(ctx context.Context, ses api.Middleware,
 			api.Message(w, sts)
 			return
 		}
-	} else if sc.name == constant.KeyGithub {
+	} else if sc.name == config.KeyGithub {
 		// method, where token adding to request basic auth
 		data, sts = getGithubData(sc, token)
 		if sts != nil {
@@ -129,7 +128,7 @@ func (ha *hAuth) callback(ctx context.Context, ses api.Middleware,
 	// add data from request
 	err := user.AddJSON(data)
 	if err != nil {
-		api.Message(w, object.ByCodeAndLog(constant.Code500,
+		api.Message(w, object.ByCodeAndLog(config.Code500,
 			err, "fb auth: API: response unmarshal error"))
 		return
 	}
@@ -137,7 +136,7 @@ func (ha *hAuth) callback(ctx context.Context, ses api.Middleware,
 	log.Printf("user came - %s", user.Login)
 	log.Printf("email came - %s", user.Email)
 
-	if sc.name == constant.KeyGithub && user.Login == user.Email {
+	if sc.name == config.KeyGithub && user.Login == user.Email {
 		email, sts := getGithubEmail(sc, token)
 		if sts != nil {
 			api.Message(w, sts)
@@ -165,21 +164,21 @@ func (ha *hAuth) callback(ctx context.Context, ses api.Middleware,
 	id, sts := ha.sUser.Create(ctx, user)
 	if sts != nil {
 		// checks email already registered
-		email := dto.NewCheckID(constant.KeyEmail, user.Email)
+		email := dto.NewCheckID(config.KeyEmail, user.Email)
 		log.Printf("creating, email is %s", user.Email)
-		idWho, sts1 := ha.sMiddleware.GetID(ctx, email)
+		idWho1, sts1 := ha.sMiddleware.GetID(ctx, email)
 		if sts1 != nil {
 			// checks login already registered
-			login := dto.NewCheckID(constant.KeyLogin, user.Login)
+			login := dto.NewCheckID(config.KeyLogin, user.Login)
 			log.Printf("creating, login is %s", user.Login)
-			idWho1, sts2 := ha.sMiddleware.GetID(ctx, login)
+			idWho2, sts2 := ha.sMiddleware.GetID(ctx, login)
 			if sts2 != nil {
 				api.Message(w, sts2)
 				return
 			}
-			id = idWho1
+			id = idWho2
 		} else {
-			id = idWho
+			id = idWho1
 		}
 	}
 	// make session
@@ -193,7 +192,7 @@ func (ha *hAuth) callback(ctx context.Context, ses api.Middleware,
 		return
 	}
 	// w status
-	sts = object.ByText(nil, constant.StatusCreated,
+	sts = object.ByText(nil, config.StatusCreated,
 		"to return on main page click button below")
 	api.Message(w, sts)
 }
@@ -210,21 +209,24 @@ func getAccessToken(sc social, code string) (string, object.Status) {
 	// POST request to set URL
 	request, err := http.NewRequest("POST", sc.tokenURL, strings.NewReader(u.Encode()))
 	if err != nil {
-		return "", object.ByCodeAndLog(constant.Code500,
+		return "", object.ByCodeAndLog(config.Code500,
 			err, "auth: request creation failed")
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	// Get the response
-	response, err := http.DefaultClient.Do(request)
+	client := http.Client{
+		Timeout: config.TimeLimit2s,
+	}
+	response, err := client.Do(request)
 	if err != nil {
-		return "", object.ByCodeAndLog(constant.Code500,
+		return "", object.ByCodeAndLog(config.Code500,
 			err, "auth: request failed")
 	}
 	// Response body converted to stringifies JSON
 	body, err := ioutil.ReadAll(response.Body)
 	log.Printf("body is %s\n", string(body)) /////////////////////////// delete
 	if err != nil {
-		return "", object.ByCodeAndLog(constant.Code500,
+		return "", object.ByCodeAndLog(config.Code500,
 			err, "auth: response read failed")
 	}
 	defer func(Body io.ReadCloser) {
@@ -242,7 +244,7 @@ func getAccessToken(sc social, code string) (string, object.Status) {
 	if err != nil {
 		v, err := url.ParseQuery(string(body))
 		if err != nil {
-			return "", object.ByCodeAndLog(constant.Code500,
+			return "", object.ByCodeAndLog(config.Code500,
 				err, "auth: response unmarshal/parse error")
 		}
 		resp.AccessToken = v.Get("access_token")
@@ -258,7 +260,7 @@ func getAccessToken(sc social, code string) (string, object.Status) {
 func getData(sc social, token string) ([]byte, object.Status) {
 	request, err := http.NewRequest("GET", sc.userURL, nil)
 	if err != nil {
-		return nil, object.ByCodeAndLog(constant.Code500,
+		return nil, object.ByCodeAndLog(config.Code500,
 			err, "auth: API: request creation failed")
 	}
 
@@ -266,15 +268,18 @@ func getData(sc social, token string) ([]byte, object.Status) {
 	request.Header.Set("Authorization", header)
 
 	// Make the request
-	response, err := http.DefaultClient.Do(request)
+	client := http.Client{
+		Timeout: config.TimeLimit2s,
+	}
+	response, err := client.Do(request)
 	if err != nil {
-		return nil, object.ByCodeAndLog(constant.Code500,
+		return nil, object.ByCodeAndLog(config.Code500,
 			err, "auth: API: request failed")
 	}
 	// Read the response as a byte slice
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return nil, object.ByCodeAndLog(constant.Code500,
+		return nil, object.ByCodeAndLog(config.Code500,
 			err, "auth: API: response read failed")
 	}
 	defer func(Body io.ReadCloser) {

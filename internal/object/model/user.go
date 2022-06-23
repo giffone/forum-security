@@ -1,9 +1,10 @@
 package model
 
 import (
-	"github.com/giffone/forum-security/internal/constant"
-	"github.com/giffone/forum-security/internal/object"
 	"time"
+
+	"github.com/giffone/forum-security/internal/config"
+	"github.com/giffone/forum-security/internal/object"
 )
 
 type User struct {
@@ -15,10 +16,10 @@ type User struct {
 	Root     int
 	Created  time.Time
 	St       *object.Settings
-	Ck       *object.Cookie
+	Ck       *object.CookieInfo
 }
 
-func NewUser(st *object.Settings, ck *object.Cookie) *User {
+func NewUser(st *object.Settings, ck *object.CookieInfo) *User {
 	u := new(User)
 	if st == nil {
 		u.St = &object.Settings{
@@ -28,7 +29,7 @@ func NewUser(st *object.Settings, ck *object.Cookie) *User {
 		u.St = st
 	}
 	if ck == nil {
-		u.Ck = new(object.Cookie)
+		u.Ck = new(object.CookieInfo)
 	} else {
 		u.Ck = ck
 	}
@@ -39,7 +40,7 @@ func (u *User) MakeKeys(key string, data ...interface{}) {
 	if key != "" {
 		u.St.Key[key] = data
 	} else {
-		u.St.Key[constant.KeyPost] = []interface{}{0}
+		u.St.Key[config.KeyPost] = []interface{}{0}
 	}
 }
 
@@ -61,15 +62,15 @@ func (u *User) New() []interface{} {
 
 func get(key map[string][]interface{}) *object.QuerySettings {
 	qs := new(object.QuerySettings)
-	qs.QueryName = constant.QueSelectUserBy
-	if value, ok := key[constant.KeyID]; ok {
+	qs.QueryName = config.QueSelectUserBy
+	if value, ok := key[config.KeyID]; ok {
 		qs.QueryFields = []interface{}{
-			constant.FieldID,
+			config.FieldID,
 		}
 		qs.Fields = value
-	} else if value, ok := key[constant.KeyLogin]; ok {
+	} else if value, ok := key[config.KeyLogin]; ok {
 		qs.QueryFields = []interface{}{
-			constant.FieldLogin,
+			config.FieldLogin,
 		}
 		qs.Fields = value
 	}

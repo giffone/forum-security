@@ -8,5 +8,5 @@ import (
 
 func (a *App) account(srvPost service.Post, srvCategory service.Category,
 	srvComment service.Comment, srvRatio service.Ratio, sMid api.Middleware) {
-	account.NewHandler(srvPost, srvCategory, srvComment, srvRatio).Register(a.ctx, a.router, sMid)
+	account.NewHandler(srvPost, srvCategory, srvComment, srvRatio).Register(a.ctx, a.mux, sMid)
 }

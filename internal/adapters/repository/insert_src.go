@@ -3,32 +3,35 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"github.com/giffone/forum-security/internal/constant"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"time"
+
+	"github.com/giffone/forum-security/internal/config"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func InsertSrc(db *sql.DB, q map[string]string) {
 	src := make(map[string][]string)
-	src[constant.TabLikes] = []string{"like", "dislike"}
-	src[constant.TabCategories] = []string{"animal", "city", "body part", "vehicle", "actor", "18+",
-		"clothing", "sport", "drink", "sea creature", "chemical element", "fruit", "country"}
+	src[config.TabLikes] = []string{"like", "dislike"}
+	src[config.TabCategories] = []string{
+		"animal", "city", "body part", "vehicle", "actor", "18+",
+		"clothing", "sport", "drink", "sea creature", "chemical element", "fruit", "country",
+	}
 
-	que := fmt.Sprintf(q[constant.QueInsert5], constant.TabUsers,
-		constant.FieldLogin, constant.FieldPassword, constant.FieldEmail, constant.FieldRoot, constant.FieldCreated)
+	que := fmt.Sprintf(q[config.QueInsert6], config.TabUsers,
+		config.FieldLogin, config.FieldName, config.FieldPassword, config.FieldEmail, config.FieldRoot, config.FieldCreated)
 	pass, err := bcrypt.GenerateFromPassword([]byte("12345Aa"), bcrypt.MinCost)
 	if err != nil {
 		log.Printf("insert source: password for admin: %v\n", err)
 	}
-	_, err = db.Exec(que, "admin", string(pass), "admin@mail.ru", 1, time.Now()) // root=1 for admin
+	_, err = db.Exec(que, "admin", "admin", string(pass), "admin@mail.ru", 1, time.Now()) // root=1 for admin
 	if err != nil {
 		log.Printf("insert source: admin did not created: %v\n", err)
 	}
 
 	for table, source := range src {
 		numberLines := 0
-		que = fmt.Sprintf(q[constant.QueInsert2], table, constant.FieldID, constant.FieldBody)
+		que = fmt.Sprintf(q[config.QueInsert2], table, config.FieldID, config.FieldBody)
 		for id, value := range source {
 			_, err := db.Exec(que, id+1, value)
 			if err != nil {

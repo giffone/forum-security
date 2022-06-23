@@ -9,24 +9,20 @@ import (
 
 	"github.com/giffone/forum-security/internal/adapters/repository"
 	"github.com/giffone/forum-security/internal/adapters/repository/sqlitedb/schema"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/pkg/paths"
+	"github.com/mattn/go-sqlite3"
 )
 
 type Lite struct {
 	db *sql.DB
-	c  *repository.Configuration
+	c  *config.DriverConf
 	q  *object.Query
 }
 
-func (l *Lite) Connect() *repository.Configuration {
-	l.c = &repository.Configuration{
-		Name:   "database-sqlite3.db",
-		Path:   "db/database-sqlite3.db",
-		PathB:  "db/backup/database-sqlite3.db",
-		Driver: "sqlite3",
-		Port:   ":3306",
-	}
+func (l *Lite) Driver() *config.DriverConf {
+	l.c = config.NewSqlite()
 	return l.c
 }
 
@@ -38,8 +34,8 @@ func (l *Lite) Query() *object.Query {
 }
 
 func (l *Lite) DataBase(ctx context.Context) *sql.DB {
-	paths.CreatePaths("db/")
-	paths.CreatePaths("db/backup")
+	paths.CreatePaths(config.PathDBs)
+	paths.CreatePaths(config.PathDBsBackup)
 	if paths.NotExist(l.c.Path) { // if main base not exist
 		l.create() // create new base
 
@@ -54,7 +50,7 @@ func (l *Lite) DataBase(ctx context.Context) *sql.DB {
 }
 
 func (l *Lite) create() {
-	log.Printf("Creating %s...\n", l.c.Name)
+	log.Printf("Creating %s...\n", l.c.Path)
 
 	file, err := os.Create(l.c.Path)
 	if err != nil {
@@ -65,20 +61,40 @@ func (l *Lite) create() {
 		return
 	}
 
-	log.Printf("%s created\n", l.c.Name)
+	log.Printf("%s created\n", l.c.Path)
 }
 
 func (l *Lite) open() {
 	var err error
-
-	l.db, err = sql.Open(l.c.Driver, l.c.Path)
+	log.Printf("db connection is %s\n", l.c.Connection)
+	l.db, err = sql.Open(l.c.Driver, l.c.Connection) // connection - with authentication as admin
 	if err != nil {
 		log.Fatalf("base: open: %v\n", err)
+	}
+	// hoock an connection to add custom functions into database
+	conn, err := l.db.Conn(context.Background())
+	if err != nil {
+		log.Fatalf("base: conn: %v\n", err)
+	}
+	defer conn.Close()
+	err = conn.Raw(func(driverConn any) error {
+		sqlieConn := driverConn.(*sqlite3.SQLiteConn)
+		log.Printf("sqlite authenticate is %t\n", sqlieConn.AuthEnabled())
+		if err := sqlieConn.RegisterFunc("minimal_id_to_show", minimalIDToShow, true); err != nil {
+			return err
+		}
+		if err := sqlieConn.RegisterFunc("maximum_id_to_show", maximumIDToShow, true); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatalf("base: hook: register func: %v\n", err)
 	}
 }
 
 func (l *Lite) make() {
-	for _, table := range repository.MakeTables() {
+	for _, table := range config.MakeTables() {
 		l.tables(table)
 	}
 }

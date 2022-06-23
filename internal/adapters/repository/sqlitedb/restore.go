@@ -2,10 +2,10 @@ package sqlitedb
 
 import (
 	"fmt"
-	"github.com/giffone/forum-security/internal/adapters/repository"
-	"github.com/giffone/forum-security/internal/constant"
 	"log"
 	"os"
+
+	"github.com/giffone/forum-security/internal/config"
 )
 
 func (l *Lite) backup() {
@@ -26,7 +26,7 @@ func (l *Lite) attach() bool {
 	log.Printf("Copying data from backup %s to %s\n", l.c.PathB, l.c.Path)
 	src := "src"
 
-	value, ok := l.q.Schema[constant.QueAttach]
+	value, ok := l.q.Schema[config.QueAttach]
 	if !ok {
 		log.Println("query: can not find attach")
 		return false
@@ -42,7 +42,7 @@ func (l *Lite) attach() bool {
 }
 
 func (l *Lite) detach(as string) {
-	value, ok := l.q.Schema[constant.QueDetach]
+	value, ok := l.q.Schema[config.QueDetach]
 	if !ok {
 		log.Println("query: can not find detach")
 		return
@@ -54,7 +54,7 @@ func (l *Lite) detach(as string) {
 }
 
 func (l *Lite) makeAndRestore(src string) {
-	for _, table := range repository.MakeTables() {
+	for _, table := range config.MakeTables() {
 		l.tables(table)
 		l.restore(table, src)
 	}
@@ -62,7 +62,7 @@ func (l *Lite) makeAndRestore(src string) {
 }
 
 func (l *Lite) restore(table, src string) {
-	value, ok := l.q.Schema[constant.QueRestore]
+	value, ok := l.q.Schema[config.QueRestore]
 	if !ok {
 		log.Println("query: can not find restore")
 		return

@@ -1,121 +1,127 @@
 package object
 
 import (
-	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 )
 
-type Cookie struct {
-	User        int
-	Post        int
-	PostString  string
-	Session     bool
-	SessionUUID string
+type CookieInfo struct {
+	User       int
+	UserStr    string
+	Post       int
+	PostString string
+	Session    bool
+	UUID       string
 }
 
-func NewCookie() *Cookie {
-	return new(Cookie)
+func NewCookieInfo() *CookieInfo {
+	return new(CookieInfo)
 }
 
-func (c *Cookie) CookieUserIDRead(r *http.Request) Status {
-	ck, err := r.Cookie(constant.CookieUserID)
+func (ci *CookieInfo) CookieUserIDRead(r *http.Request) error {
+	ck, err := r.Cookie(config.CookieUserID)
 	if err != nil {
-		return ByCode(constant.Code400)
+		return err
 	}
 	user, err := strconv.Atoi(ck.Value)
 	if err != nil || user == 0 {
-		return ByCodeAndLog(constant.Code400,
-			err, "cookie: cookieUserIDRead: atoi")
+		return err
 	}
-	c.User = user
-	log.Printf("object cookie: userID is: %d", c.User)
+	ci.User = user
+	ci.UserStr = ck.Value
+	log.Printf("object cookie: userID is: %d", ci.User)
 	return nil
 }
 
-func (c *Cookie) CookieSessionRead(r *http.Request) Status {
-	ck, err := r.Cookie(constant.CookieSession)
+func (ci *CookieInfo) CookieSessionRead(r *http.Request) error {
+	ck, err := r.Cookie(config.CookieSession)
 	if err != nil {
-		return ByCodeAndLog(constant.Code401,
-			err, "cookie: cookieSessionRead")
+		return err
 	}
-	c.SessionUUID = ck.Value
-	log.Printf("object cookie: middleware-uuid is: %s", c.SessionUUID)
+	ci.UUID = ck.Value
+	log.Printf("object cookie: middleware-uuid is: %s", ci.UUID)
 	return nil
 }
 
-func (c *Cookie) CookiePostIDRead(r *http.Request) Status {
-	p, err := r.Cookie(constant.CookiePostID)
+func (ci *CookieInfo) CookiePostIDRead(r *http.Request) Status {
+	p, err := r.Cookie(config.CookiePostID)
 	if err != nil {
-		return ByCodeAndLog(constant.Code400,
+		return ByCodeAndLog(config.Code400,
 			err, "cookie: cookiePostIDRead")
 	}
-	c.PostString = p.Value
-	log.Printf("object cookie: postID is: %s", c.PostString)
+	ci.PostString = p.Value
+	log.Printf("object cookie: postID is: %s", ci.PostString)
 	return nil
 }
 
-func (c *Cookie) AddUser(id int) *Cookie {
-	c.User = id
-	return c
+func (ci *CookieInfo) AddUser(id int) *CookieInfo {
+	ci.User = id
+	return ci
 }
 
-func CookieSessionAndUserID(w http.ResponseWriter, value []string, method string) Status {
-	name := []string{constant.CookieSession, constant.CookieUserID}
-	sts := cookieSet(w, name, value, method)
-	if sts != nil {
-		return sts
-	}
+func CookieSessionAndUserID(w http.ResponseWriter, value []string, method string) Status { /////////////////// here error
+	// name := []string{config.CookieSession, config.CookieUserID}
+	// sts := cookieSet(w, name, value, method)
+	// if sts != nil {
+	// 	return sts
+	// }
 	return nil
 }
 
-func CookiePostID(w http.ResponseWriter, id string) Status {
-	name := []string{constant.CookiePostID}
-	value := []string{id}
-	sts := cookieSet(w, name, value, "")
-	if sts != nil {
-		return sts
-	}
+func CookiePostID(w http.ResponseWriter, id string) Status { /////////////////// here error
+	// name := []string{config.CookiePostID}
+	// value := []string{id}
+	// sts := cookieSet(w, name, value, "")
+	// if sts != nil {
+	// 	return sts
+	// }
 	return nil
 }
 
-func CookiePostIDDel(w http.ResponseWriter) Status {
-	name := []string{constant.CookiePostID}
-	value := []string{""}
-	sts := cookieSet(w, name, value, "erase")
-	if sts != nil {
-		return sts
-	}
+func CookiePostIDDel(w http.ResponseWriter) Status { /////////////////// here error
+	// name := []string{config.CookiePostID}
+	// value := []string{""}
+	// sts := cookieSet(w, name, value, "erase")
+	// if sts != nil {
+	// 	return sts
+	// }
 	return nil
 }
 
-func cookieSet(w http.ResponseWriter, name []string, value []string, method string) Status {
-	lName := len(name)
-	lValue := len(value)
-	if lName != lValue {
-		e := fmt.Sprintf(" different length name(%d) and value(%d)\n", lName, lValue)
-		err := errors.New(e)
-		return ByCodeAndLog(constant.Code500,
-			err, "create cookie:")
-	}
-	for i := 0; i < len(name); i++ {
-		c := &http.Cookie{}
-		c.Name = name[i]
-		c.Value = value[i]
-		c.Path = "/"
-		if method == "remember" {
-			c.Expires = time.Now().AddDate(0, 0, constant.SessionExpire)
-			c.MaxAge = constant.SessionMaxAge
-		} else if method == "erase" {
-			c.Expires = time.Unix(1, 0)
-			c.MaxAge = -1
+type Cookie struct {
+	src  map[string]string
+	save bool
+	w    http.ResponseWriter
+}
+
+func NewCookie(w http.ResponseWriter, src map[string]string) *Cookie {
+	return &Cookie{src: src, w: w}
+}
+
+// Set sets cookie into ResponseWriter
+// true - save, false - delete cookie
+func (c *Cookie) Set(saveOrDelete bool) {
+	c.save = saveOrDelete
+	c.set()
+}
+
+func (c Cookie) set() {
+	for key, value := range c.src {
+		ck := &http.Cookie{}
+		ck.Name = key
+		ck.Value = value
+		ck.Path = "/"
+		if c.save {
+			ck.Expires = time.Now().Add(config.SessionExpire)
+			ck.MaxAge = config.SessionMaxAge
+		} else {
+			ck.Expires = time.Unix(1, 0)
+			ck.MaxAge = -1
 		}
-		http.SetCookie(w, c)
+		http.SetCookie(c.w, ck)
 	}
-	return nil
 }

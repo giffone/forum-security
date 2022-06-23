@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/giffone/forum-security/internal/adapters/api"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/service"
@@ -32,18 +32,18 @@ func (mw *middleware) Skip(ctx context.Context, fn func(context.Context,
 }
 
 func (mw *middleware) CreateSession(ctx context.Context, w http.ResponseWriter, id int, method string) object.Status {
-	ck := object.NewCookie().AddUser(id)
+	ck := object.NewCookieInfo().AddUser(id)
 	// generate middleware uuid
 	sID, err := uuid.NewV4()
 	if err != nil {
-		return object.ByCodeAndLog(constant.Code500,
+		return object.ByCodeAndLog(config.Code500,
 			err, "middleware create: generate uuid")
 	}
-	ck.SessionUUID = sID.String()
+	ck.UUID = sID.String()
 	// create middleware in database
 	// if middleware exist, it will be deleted
 	d := dto.NewSession(nil, nil, ck)
-	d.Add(time.Now().AddDate(0, 0, constant.SessionExpire))
+	d.Add(time.Now().Add(config.SessionExpire))
 	_, sts := mw.service.CreateSession(ctx, d)
 	if sts != nil {
 		return sts
@@ -57,41 +57,41 @@ func (mw *middleware) CreateSession(ctx context.Context, w http.ResponseWriter, 
 	return nil
 }
 
-func (mw *middleware) CheckSession(ctx context.Context, fn func(context.Context, *object.Cookie,
+func (mw *middleware) CheckSession(ctx context.Context, fn func(context.Context, *object.CookieInfo,
 	object.Status, http.ResponseWriter, *http.Request),
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ck := object.NewCookie()
+		ck := object.NewCookieInfo()
 		// get userID from cookie
 		sts := ck.CookieUserIDRead(r)
 		if sts != nil {
-			fn(ctx, object.NewCookie(), nil, w, r) // start with no middleware
+			fn(ctx, object.NewCookieInfo(), nil, w, r) // start with no middleware
 			return
 		}
 		// get middleware uuid from cookie
 		sts = ck.CookieSessionRead(r)
 		if sts != nil {
-			fn(ctx, object.NewCookie(), nil, w, r) // start with no middleware
+			fn(ctx, object.NewCookieInfo(), nil, w, r) // start with no middleware
 			return
 		}
 		// make new middleware DTO
 		d := dto.NewSession(nil, nil, ck)
 		d.Add(time.Now())
 		// get middleware from db
-		session, sts := mw.service.CheckSession(ctx, d)
-		if sts != nil {
-			fn(ctx, object.NewCookie(), sts, w, r) // start with no middleware
-			return
-		}
-		// match middleware from db and cookie
-		if sts == nil && session == nil { // if middleware did not match
-			// delete from browser
-			sts = object.CookieSessionAndUserID(w,
-				[]string{"", ""}, "erase")
-			sts = object.ByText(nil, constant.AccessDenied)
-			fn(ctx, object.NewCookie(), sts, w, r) // start with no middleware
-			return
-		}
+		// session, sts := mw.service.CheckSession(ctx, d)
+		// if sts != nil {
+		// 	fn(ctx, object.NewCookieInfo(), sts, w, r) // start with no middleware
+		// 	return
+		// }
+		// // match middleware from db and cookie
+		// if sts == nil && session == nil { // if middleware did not match
+		// 	// delete from browser
+		// 	sts = object.CookieSessionAndUserID(w,
+		// 		[]string{"", ""}, "erase")
+		// 	sts = object.ByText(nil, config.AccessDenied)
+		// 	fn(ctx, object.NewCookieInfo(), sts, w, r) // start with no middleware
+		// 	return
+		// }
 		ck.Session = true
 		fn(ctx, ck, nil, w, r)
 	}

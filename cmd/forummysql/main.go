@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"net/http"
 
 	"github.com/giffone/forum-security/internal/app"
 	_ "github.com/go-sql-driver/mysql" // import mysql library
@@ -13,7 +12,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	db, router, port := app.NewApp(ctx).Run("mysql")
+	db, srv := app.NewApp(ctx).Run("mysql")
 
 	defer func(db *sql.DB) {
 		err := db.Close()
@@ -22,8 +21,9 @@ func main() {
 		}
 	}(db)
 
-	log.Printf("localhost%s is listening...\n", port)
-	if err := http.ListenAndServe(port, router); err != nil {
-		log.Printf("listening error: %v", err)
+	log.Printf("https://localhost%s is listening...\n", srv.Addr)
+
+	if err := srv.ListenAndServeTLS("", ""); err != nil {
+		log.Fatalf("listening error: %v", err)
 	}
 }

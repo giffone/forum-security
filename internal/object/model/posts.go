@@ -1,17 +1,17 @@
 package model
 
 import (
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 )
 
 type Posts struct {
 	Slice []*Post
 	St    *object.Settings
-	Ck    *object.Cookie
+	Ck    *object.CookieInfo
 }
 
-func NewPosts(st *object.Settings, ck *object.Cookie) *Posts {
+func NewPosts(st *object.Settings, ck *object.CookieInfo) *Posts {
 	p := new(Posts)
 	if st == nil {
 		p.St = &object.Settings{
@@ -21,7 +21,7 @@ func NewPosts(st *object.Settings, ck *object.Cookie) *Posts {
 		p.St = st
 	}
 	if ck == nil {
-		p.Ck = new(object.Cookie)
+		p.Ck = new(object.CookieInfo)
 	} else {
 		p.Ck = ck
 	}
@@ -32,63 +32,63 @@ func (p *Posts) MakeKeys(key string, data ...interface{}) {
 	if key != "" {
 		p.St.Key[key] = data
 	} else {
-		p.St.Key[constant.KeyPost] = []interface{}{0}
+		p.St.Key[config.KeyPost] = []interface{}{0}
 	}
 }
 
 func (p *Posts) GetList() *object.QuerySettings {
 	if len(p.St.Key) == 0 {
 		return &object.QuerySettings{
-			QueryName: constant.QueSelectPosts,
+			QueryName: config.QueSelectPosts,
 		}
 	}
 	qs := new(object.QuerySettings)
-	if value, ok := p.St.Key[constant.KeyCategory]; ok {
-		qs.QueryName = constant.QueSelectPostsAndCategoryBy
+	if value, ok := p.St.Key[config.KeyCategory]; ok {
+		qs.QueryName = config.QueSelectPostsAndCategoryBy
 		qs.QueryFields = []interface{}{
-			constant.TabPostsCategories,
-			constant.FieldCategory,
+			config.TabPostsCategories,
+			config.FieldCategory,
 		}
 		qs.Fields = value
-	} else if value, ok := p.St.Key[constant.KeyPost]; ok {
-		qs.QueryName = constant.QueSelectPostsBy
+	} else if value, ok := p.St.Key[config.KeyPost]; ok {
+		qs.QueryName = config.QueSelectPostsBy
 		qs.QueryFields = []interface{}{
-			constant.TabPosts,
-			constant.FieldID,
+			config.TabPosts,
+			config.FieldID,
 		}
 		if value == nil {
 			qs.Fields = []interface{}{p.Ck.Post}
 		} else {
 			qs.Fields = value
 		}
-	} else if value, ok := p.St.Key[constant.KeyUser]; ok {
-		qs.QueryName = constant.QueSelectPostsBy
+	} else if value, ok := p.St.Key[config.KeyUser]; ok {
+		qs.QueryName = config.QueSelectPostsBy
 		qs.QueryFields = []interface{}{
-			constant.TabPosts,
-			constant.FieldUser,
+			config.TabPosts,
+			config.FieldUser,
 		}
 		if value == nil {
 			qs.Fields = []interface{}{p.Ck.User}
 		} else {
 			qs.Fields = value
 		}
-	} else if value, ok := p.St.Key[constant.KeyID]; ok {
-		qs.QueryName = constant.QueSelect
+	} else if value, ok := p.St.Key[config.KeyID]; ok {
+		qs.QueryName = config.QueSelect
 		qs.QueryFields = []interface{}{
-			constant.TabPosts,
-			constant.TabPosts,
-			constant.FieldID,
+			config.TabPosts,
+			config.TabPosts,
+			config.FieldID,
 		}
 		if value == nil {
 			qs.Fields = []interface{}{0}
 		} else {
 			qs.Fields = value
 		}
-	} else if value, ok := p.St.Key[constant.KeyRated]; ok {
-		qs.QueryName = constant.QueSelectPostsRatedBy
+	} else if value, ok := p.St.Key[config.KeyRated]; ok {
+		qs.QueryName = config.QueSelectPostsRatedBy
 		qs.QueryFields = []interface{}{
-			constant.TabPostsLikes,
-			constant.FieldUser,
+			config.TabPostsLikes,
+			config.FieldUser,
 		}
 		if value == nil {
 			qs.Fields = []interface{}{p.Ck.User}
@@ -103,7 +103,7 @@ func (p *Posts) NewList() []interface{} {
 	post := new(Post)
 	p.Slice = append(p.Slice, post)
 	// for account handler
-	if _, ok := p.St.Key[constant.KeyComment]; ok {
+	if _, ok := p.St.Key[config.KeyComment]; ok {
 		comment := new(Comment)
 		comments := new(Comments)
 		comments.Slice = append(comments.Slice, comment)
@@ -121,7 +121,7 @@ func (p *Posts) NewList() []interface{} {
 			&comment.Body,
 			&comment.Created,
 		}
-	} else if _, ok := p.St.Key[constant.KeyRated]; ok {
+	} else if _, ok := p.St.Key[config.KeyRated]; ok {
 		return []interface{}{
 			&post.ID,
 			&post.Title,
@@ -132,7 +132,7 @@ func (p *Posts) NewList() []interface{} {
 			&post.Image,
 			&post.Liked,
 		}
-	} else if _, ok := p.St.Key[constant.KeyID]; ok {
+	} else if _, ok := p.St.Key[config.KeyID]; ok {
 		return []interface{}{
 			&post.ID,
 		}
@@ -167,16 +167,16 @@ func (p *Posts) PostOrCommentID(index int) int {
 // Add adding information to slice post/comment by index
 func (p *Posts) Add(key string, index int, data interface{}) {
 	switch key {
-	case constant.KeyLike:
+	case config.KeyLike:
 		p.Slice[index].Likes = data
-	case constant.KeyRated:
+	case config.KeyRated:
 		p.Slice[index].Liked = data
-	case constant.KeyCategory:
+	case config.KeyCategory:
 		p.Slice[index].Categories = data
 	}
 }
 
-func (p *Posts) Cookie() *object.Cookie {
+func (p *Posts) Cookie() *object.CookieInfo {
 	return p.Ck
 }
 
@@ -185,9 +185,9 @@ func (p *Posts) Settings() *object.Settings {
 }
 
 func (p *Posts) KeyRole() string {
-	return constant.KeyPost
+	return config.KeyPost
 }
 
 func (p *Posts) KeyLiked() string {
-	return constant.KeyPostRated
+	return config.KeyPostRated
 }

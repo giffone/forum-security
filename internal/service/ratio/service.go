@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/giffone/forum-security/internal/adapters/repository"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/object/model"
@@ -25,36 +25,36 @@ func NewService(repo repository.Repo, sMiddleware service.Middleware) service.Ra
 }
 
 func (sr *sRatio) Create(ctx context.Context, d *dto.Ratio) (int, object.Status) {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	ratio := model.NewLike(nil, d.Obj.Ck)
 	post := false
 	// post
-	if id, ok := d.PostOrComm[constant.KeyPost]; ok {
+	if id, ok := d.PostOrComm[config.KeyPost]; ok {
 		post = true
 		// check id for valid
-		idPost, sts := sr.sMiddleware.GetID(ctx2, dto.NewCheckIDAtoi(constant.KeyPost, id))
+		idPost, sts := sr.sMiddleware.GetID(ctx2, dto.NewCheckIDAtoi(config.KeyPost, id))
 		if sts != nil {
 			return 0, sts
 		}
 		// post - keys for get likes from db
-		ratio.MakeKeys(constant.KeyPost, d.Obj.Ck.User, idPost)
+		ratio.MakeKeys(config.KeyPost, d.Obj.Ck.User, idPost)
 		// post - keys for create like in db
-		d.MakeKeys(constant.KeyPost, d.Obj.Ck.User, idPost)
+		d.MakeKeys(config.KeyPost, d.Obj.Ck.User, idPost)
 		// comment
-	} else if id, ok := d.PostOrComm[constant.KeyComment]; ok {
+	} else if id, ok := d.PostOrComm[config.KeyComment]; ok {
 		// check id for valid
-		idComm, sts := sr.sMiddleware.GetID(ctx2, dto.NewCheckIDAtoi(constant.KeyComment, id))
+		idComm, sts := sr.sMiddleware.GetID(ctx2, dto.NewCheckIDAtoi(config.KeyComment, id))
 		if sts != nil {
 			return 0, sts
 		}
-		ratio.MakeKeys(constant.KeyComment, d.Obj.Ck.User, idComm)
+		ratio.MakeKeys(config.KeyComment, d.Obj.Ck.User, idComm)
 		// comment - keys for create like in db
-		d.MakeKeys(constant.KeyComment, d.Obj.Ck.User, idComm)
+		d.MakeKeys(config.KeyComment, d.Obj.Ck.User, idComm)
 	} else {
 		// if not post or comment
-		return 0, object.ByCode(constant.Code400)
+		return 0, object.ByCode(config.Code400)
 	}
 	// check like exist by user_id and post_id/comment_id
 	sts := sr.repo.GetOne(ctx2, ratio)
@@ -75,9 +75,9 @@ func (sr *sRatio) Create(ctx context.Context, d *dto.Ratio) (int, object.Status)
 	dDelete := dto.NewRatio(nil, nil, d.Obj.Ck)
 	// make keys for delete by id
 	if post {
-		dDelete.MakeKeys(constant.KeyPost, ratio.PostOrComm)
+		dDelete.MakeKeys(config.KeyPost, ratio.PostOrComm)
 	} else {
-		dDelete.MakeKeys(constant.KeyComment, ratio.PostOrComm)
+		dDelete.MakeKeys(config.KeyComment, ratio.PostOrComm)
 	}
 	// delete
 	sts = sr.repo.Delete(ctx2, dDelete)
@@ -111,17 +111,17 @@ func (sr *sRatio) CountFor(ctx context.Context, pc model.PostOrComment) object.S
 		}
 		lSlice := len(likesCount.Slice)
 		if lSlice == 0 {
-			pc.Add(constant.KeyLike, i, likesCount.IfNil())
+			pc.Add(config.KeyLike, i, likesCount.IfNil())
 		} else {
 			// like or dislike only, need to show another with 0
 			if lSlice == 1 {
-				if likesCount.Slice[0].Body == constant.FieldLike {
+				if likesCount.Slice[0].Body == config.FieldLike {
 					likesCount.Slice = append(likesCount.Slice, likesCount.DislikeNil())
 				} else {
 					likesCount.Slice = append(likesCount.Slice, likesCount.LikeNil())
 				}
 			}
-			pc.Add(constant.KeyLike, i, likesCount.Slice)
+			pc.Add(config.KeyLike, i, likesCount.Slice)
 		}
 	}
 	return nil
@@ -137,7 +137,7 @@ func (sr *sRatio) Liked(ctx context.Context, pc model.PostOrComment) object.Stat
 		if sts != nil {
 			return sts
 		}
-		pc.Add(constant.KeyRated, i, like.Body)
+		pc.Add(config.KeyRated, i, like.Body)
 	}
 	return nil
 }
@@ -158,17 +158,17 @@ func (sr *sRatio) CountForChan(ctx context.Context, pc model.PostOrComment, chan
 		}
 		lSlice := len(likesCount.Slice)
 		if lSlice == 0 {
-			pc.Add(constant.KeyLike, i, likesCount.IfNil())
+			pc.Add(config.KeyLike, i, likesCount.IfNil())
 		} else {
 			// like or dislike only, need to show another with 0
 			if lSlice == 1 {
-				if likesCount.Slice[0].Body == constant.FieldLike {
+				if likesCount.Slice[0].Body == config.FieldLike {
 					likesCount.Slice = append(likesCount.Slice, likesCount.DislikeNil())
 				} else {
 					likesCount.Slice = append(likesCount.Slice, likesCount.LikeNil())
 				}
 			}
-			pc.Add(constant.KeyLike, i, likesCount.Slice)
+			pc.Add(config.KeyLike, i, likesCount.Slice)
 		}
 	}
 	log.Println("out CountForChan")
@@ -188,7 +188,8 @@ func (sr *sRatio) LikedChan(ctx context.Context, pc model.PostOrComment, channel
 			channel <- sts
 			return
 		}
-		pc.Add(constant.KeyRated, i, like.Body)
+		pc.Add(config.KeyRated, i, like.Body)
+		<-ctx.Done()
 	}
 	log.Println("out LikedChan")
 	channel <- nil

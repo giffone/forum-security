@@ -3,10 +3,10 @@ package object
 type Obj struct {
 	St  *Settings // settings
 	Sts *Statuses
-	Ck  *Cookie
+	Ck  *CookieInfo
 }
 
-func (o *Obj) NewObjects(st *Settings, sts *Statuses, ck *Cookie) {
+func (o *Obj) NewObjects(st *Settings, sts *Statuses, ck *CookieInfo) {
 	if st == nil {
 		o.St = NewSettings()
 	} else {
@@ -18,7 +18,7 @@ func (o *Obj) NewObjects(st *Settings, sts *Statuses, ck *Cookie) {
 		o.Sts = sts
 	}
 	if ck == nil {
-		o.Ck = NewCookie()
+		o.Ck = NewCookieInfo()
 	} else {
 		o.Ck = ck
 	}

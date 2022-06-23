@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 )
 
 type Statuses struct {
@@ -73,13 +73,13 @@ func byText(err error, text string, args []any) *Statuses {
 	} else {
 		sts.StatusBody = fmt.Sprintf(text, args...)
 	}
-	if text == constant.StatusOK {
-		sts.StatusCode = constant.Code200
-	} else if text == constant.StatusCreated {
-		sts.StatusCode = constant.Code201
+	if text == config.StatusOK {
+		sts.StatusCode = config.Code200
+	} else if text == config.StatusCreated {
+		sts.StatusCode = config.Code201
 	} else {
 		if sts.StatusCode == 0 {
-			sts.StatusCode = constant.Code403
+			sts.StatusCode = config.Code403
 		}
 	}
 	return sts

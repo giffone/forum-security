@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/pkg/password"
 	"golang.org/x/crypto/bcrypt"
@@ -43,7 +43,7 @@ func (u *User) Add(r *http.Request) {
 	u.RePassword = r.PostFormValue("re-password")
 	u.Email = strings.ToLower(r.PostFormValue("email"))
 	u.ReEmail = strings.ToLower(r.PostFormValue("re-email"))
-	if u.Obj.Sts.ReturnPage == constant.URLLogin {
+	if u.Obj.Sts.ReturnPage == config.URLLogin {
 		u.RePassword = u.Password
 		u.ReEmail = u.Email
 	}
@@ -83,13 +83,13 @@ func (u *User) ValidLogin() bool {
 	}
 	validChar := regexp.MustCompile(`\w`)
 
-	if len(u.Login) < constant.LoginMinLength {
-		u.Obj.Sts.ByText(nil, constant.TooShort,
+	if len(u.Login) < config.LoginMinLength {
+		u.Obj.Sts.ByText(nil, config.TooShort,
 			"login", "three")
 		return false
 	}
 	if ok := validChar.MatchString(u.Login); !ok {
-		u.Obj.Sts.ByText(nil, constant.InvalidCharacters,
+		u.Obj.Sts.ByText(nil, config.InvalidCharacters,
 			"login")
 		return false
 	}
@@ -103,17 +103,17 @@ func (u *User) ValidPassword() bool {
 	validChar := regexp.MustCompile(`\w`)
 
 	if u.Password != u.RePassword {
-		u.Obj.Sts.ByText(nil, constant.NotMatch,
+		u.Obj.Sts.ByText(nil, config.NotMatch,
 			"password")
 		return false
 	}
-	if len(u.Password) < constant.PasswordMinLength {
-		u.Obj.Sts.ByText(nil, constant.TooShort,
+	if len(u.Password) < config.PasswordMinLength {
+		u.Obj.Sts.ByText(nil, config.TooShort,
 			"password", "six")
 		return false
 	}
 	if ok := validChar.MatchString(u.Password); !ok {
-		u.Obj.Sts.ByText(nil, constant.InvalidCharacters,
+		u.Obj.Sts.ByText(nil, config.InvalidCharacters,
 			"password")
 		return false
 	}
@@ -130,7 +130,7 @@ func (u *User) CryptPassword() bool {
 	}
 	passGen, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.MinCost)
 	if err != nil {
-		u.Obj.Sts.ByCodeAndLog(constant.Code500,
+		u.Obj.Sts.ByCodeAndLog(config.Code500,
 			err, "dto: crypt password:")
 		return false
 	}
@@ -143,19 +143,19 @@ func (u *User) ValidEmail() bool {
 		return false
 	}
 	if u.Email != u.ReEmail {
-		u.Obj.Sts.ByText(nil, constant.NotMatch,
+		u.Obj.Sts.ByText(nil, config.NotMatch,
 			"email")
 		return false
 	}
 	validEmail := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
 	if ok := validEmail.MatchString(u.Email); !ok {
-		u.Obj.Sts.ByText(nil, constant.InvalidEnter,
+		u.Obj.Sts.ByText(nil, config.InvalidEnter,
 			"email")
 		return false
 	}
 	//_, err := mail.ParseAddress(u.Email)
 	//if err != nil {
-	//	u.Obj.Sts.StatusByText(constant.InvalidEnter,
+	//	u.Obj.Sts.StatusByText(config.InvalidEnter,
 	//		"email", nil)
 	//	return false
 	//}
@@ -166,20 +166,20 @@ func (u *User) MakeKeys(key string, data ...interface{}) {
 	if key != "" {
 		u.Obj.St.Key[key] = data
 	} else {
-		u.Obj.St.Key[constant.FieldPost] = []interface{}{0}
+		u.Obj.St.Key[config.FieldPost] = []interface{}{0}
 	}
 }
 
 func (u *User) Create() *object.QuerySettings {
 	return &object.QuerySettings{
-		QueryName: constant.QueInsert5,
+		QueryName: config.QueInsert5,
 		QueryFields: []interface{}{
-			constant.TabUsers,
-			constant.FieldLogin,
-			constant.FieldName,
-			constant.FieldPassword,
-			constant.FieldEmail,
-			constant.FieldCreated,
+			config.TabUsers,
+			config.FieldLogin,
+			config.FieldName,
+			config.FieldPassword,
+			config.FieldEmail,
+			config.FieldCreated,
 		},
 		Fields: []interface{}{
 			u.Login,
@@ -193,7 +193,7 @@ func (u *User) Create() *object.QuerySettings {
 
 func (u *User) Delete() *object.QuerySettings {
 	return &object.QuerySettings{
-		//QueryName: constant.QueDeleteBy,
+		//QueryName: config.QueDeleteBy,
 		//QueryFields: []interface{}{
 		//	"id",
 		//},

@@ -34,7 +34,7 @@ type PostOrComment interface {
 	LSlice() int
 	PostOrCommentID(index int) int
 	Add(key string, index int, data interface{})
-	Cookie() *object.Cookie
+	Cookie() *object.CookieInfo
 	Settings() *object.Settings
 	KeyRole() string
 	KeyLiked() string

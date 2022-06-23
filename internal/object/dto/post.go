@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 )
 
@@ -22,7 +22,7 @@ type Post struct {
 	Obj        object.Obj
 }
 
-func NewPost(st *object.Settings, sts *object.Statuses, ck *object.Cookie) *Post {
+func NewPost(st *object.Settings, sts *object.Statuses, ck *object.CookieInfo) *Post {
 	p := new(Post)
 	p.Categories = NewCategoryPost()
 	p.Obj.NewObjects(st, sts, ck)
@@ -33,12 +33,12 @@ func (p *Post) Add(r *http.Request) bool {
 	// get user id
 	sts := p.Obj.Ck.CookieUserIDRead(r)
 	if sts != nil {
-		p.Obj.Sts = sts.Status()
+		// p.Obj.Sts = sts.Status()                   /////////////////// here error
 		return false
 	}
 	reader, err := r.MultipartReader()
 	if err != nil {
-		p.Obj.Sts.ByCodeAndLog(constant.Code400,
+		p.Obj.Sts.ByCodeAndLog(config.Code400,
 			err, "dto: create post: multipartReader")
 		return false
 	}
@@ -48,7 +48,7 @@ func (p *Post) Add(r *http.Request) bool {
 			break
 		}
 		if err != nil {
-			p.Obj.Sts.ByCodeAndLog(constant.Code500,
+			p.Obj.Sts.ByCodeAndLog(config.Code500,
 				err, "dto: create post: multipartReader")
 			return false
 		}
@@ -69,7 +69,7 @@ func (p *Post) add(part *multipart.Part) bool {
 		text := make([]byte, 512)
 		n, err := part.Read(text)
 		if err != nil && err != io.EOF {
-			p.Obj.Sts.ByCodeAndLog(constant.Code500,
+			p.Obj.Sts.ByCodeAndLog(config.Code500,
 				err, "dto: create post: form read")
 			return false
 		}
@@ -78,7 +78,7 @@ func (p *Post) add(part *multipart.Part) bool {
 		text := make([]byte, 5<<20)
 		n, err := part.Read(text)
 		if err != nil && err != io.EOF {
-			p.Obj.Sts.ByCodeAndLog(constant.Code500,
+			p.Obj.Sts.ByCodeAndLog(config.Code500,
 				err, "dto: create post: form read")
 			return false
 		}
@@ -87,7 +87,7 @@ func (p *Post) add(part *multipart.Part) bool {
 		text := make([]byte, 512)
 		n, err := part.Read(text)
 		if err != nil && err != io.EOF {
-			p.Obj.Sts.ByCodeAndLog(constant.Code500,
+			p.Obj.Sts.ByCodeAndLog(config.Code500,
 				err, "dto: create post: form read")
 			return false
 		}
@@ -101,14 +101,14 @@ func (p *Post) add(part *multipart.Part) bool {
 		var b bytes.Buffer
 		_, err := io.Copy(&b, part)
 		if err != nil && err != io.EOF {
-			p.Obj.Sts.ByCodeAndLog(constant.Code400,
+			p.Obj.Sts.ByCodeAndLog(config.Code400,
 				err, "dto: image: io copy")
 			return false
 		}
 		p.Image.Src.MIME = part.Header.Get("Content-Type")
 		p.Image.Src.Body = b.Bytes()
 	default:
-		p.Obj.Sts.ByCodeAndLog(constant.Code400,
+		p.Obj.Sts.ByCodeAndLog(config.Code400,
 			errors.New(pr), "unexpected form name")
 		return false
 	}
@@ -123,7 +123,7 @@ func (p *Post) Valid() bool {
 	// delete space for check an any symbol
 	body := strings.TrimSpace(p.Body)
 	if body == "" {
-		p.Obj.Sts.ByText(nil, constant.TooShort, "post", "one")
+		p.Obj.Sts.ByText(nil, config.TooShort, "post", "one")
 		return false
 	}
 	body = strings.TrimSpace(p.Title)
@@ -137,16 +137,16 @@ func (p *Post) Valid() bool {
 	if p.Image != nil {
 		// check for type file
 		if p.Image.Src.MIME != "image/gif" && p.Image.Src.MIME != "image/png" && p.Image.Src.MIME != "image/jpeg" {
-			p.Obj.Sts.ByText(nil, constant.ImageNotAllowed, p.Image.Src.MIME)
-			p.Obj.Sts.StatusCode = constant.Code400
+			p.Obj.Sts.ByText(nil, config.ImageNotAllowed, p.Image.Src.MIME)
+			p.Obj.Sts.StatusCode = config.Code400
 			return false
 		} else {
 			p.Image.Type = "image"
 		}
 		// check for limit size
-		if int64(len(p.Image.Src.Body)) > constant.MaxImageSize {
-			p.Obj.Sts.ByText(nil, constant.FileSizeToBig, constant.MaxImageSizeStr)
-			p.Obj.Sts.StatusCode = constant.Code400
+		if int64(len(p.Image.Src.Body)) > config.MaxImageSize {
+			p.Obj.Sts.ByText(nil, config.FileSizeToBig, config.MaxImageSizeStr)
+			p.Obj.Sts.StatusCode = config.Code400
 			return false
 		}
 
@@ -156,13 +156,13 @@ func (p *Post) Valid() bool {
 
 func (p *Post) Create() *object.QuerySettings {
 	return &object.QuerySettings{
-		QueryName: constant.QueInsert4,
+		QueryName: config.QueInsert4,
 		QueryFields: []interface{}{
-			constant.TabPosts,
-			constant.FieldUser,
-			constant.FieldTitle,
-			constant.FieldBody,
-			constant.FieldCreated,
+			config.TabPosts,
+			config.FieldUser,
+			config.FieldTitle,
+			config.FieldBody,
+			config.FieldCreated,
 		},
 		Fields: []interface{}{
 			p.Obj.Ck.User,

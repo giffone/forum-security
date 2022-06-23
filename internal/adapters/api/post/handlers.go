@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/giffone/forum-security/internal/adapters/api"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/object/model"
@@ -36,13 +36,13 @@ func NewHandler(service service.Post,
 }
 
 func (hp *hPost) Register(ctx context.Context, router *http.ServeMux, middleware api.Middleware) {
-	router.HandleFunc(constant.URLRead, middleware.CheckSession(ctx, hp.Read))
-	router.HandleFunc(constant.URLPost, middleware.CheckSession(ctx, hp.CreatePost))
-	router.HandleFunc(constant.URLComment, middleware.CheckSession(ctx, hp.CreateComment))
-	router.HandleFunc(constant.URLReadRatio, middleware.CheckSession(ctx, hp.CreateRatio))
+	router.HandleFunc(config.URLRead, middleware.CheckSession(ctx, hp.Read))
+	router.HandleFunc(config.URLPost, middleware.CheckSession(ctx, hp.CreatePost))
+	router.HandleFunc(config.URLComment, middleware.CheckSession(ctx, hp.CreateComment))
+	router.HandleFunc(config.URLReadRatio, middleware.CheckSession(ctx, hp.CreateRatio))
 }
 
-func (hp *hPost) Read(ctx context.Context, ck *object.Cookie, sts object.Status,
+func (hp *hPost) Read(ctx context.Context, ck *object.CookieInfo, sts object.Status,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	log.Println(r.Method, " ", r.URL.Path)
@@ -52,13 +52,13 @@ func (hp *hPost) Read(ctx context.Context, ck *object.Cookie, sts object.Status,
 		return
 	}
 	if r.Method != "GET" {
-		api.Message(w, object.ByCode(constant.Code405))
+		api.Message(w, object.ByCode(config.Code405))
 		return
 	}
 	// git post id
 	ck.PostString = r.URL.Query().Get("post")
 	// check valid id for refer page
-	post := dto.NewCheckIDAtoi(constant.KeyPost, ck.PostString)
+	post := dto.NewCheckIDAtoi(config.KeyPost, ck.PostString)
 	idWho, sts := hp.sMiddleware.GetID(ctx, post)
 	if sts != nil {
 		api.Message(w, sts)
@@ -72,11 +72,11 @@ func (hp *hPost) Read(ctx context.Context, ck *object.Cookie, sts object.Status,
 	hp.get(ctx, ck, w)
 }
 
-func (hp *hPost) CreatePost(ctx context.Context, ck *object.Cookie, sts object.Status,
+func (hp *hPost) CreatePost(ctx context.Context, ck *object.CookieInfo, sts object.Status,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	log.Println(r.Method, " ", r.URL.Path)
-	ctx, cancel := context.WithTimeout(ctx, constant.TimeLimit)
+	ctx, cancel := context.WithTimeout(ctx, config.TimeLimit10s)
 	defer cancel()
 	// check errors in cookie
 	if sts != nil {
@@ -84,12 +84,12 @@ func (hp *hPost) CreatePost(ctx context.Context, ck *object.Cookie, sts object.S
 		return
 	}
 	if r.Method != "POST" {
-		api.Message(w, object.ByCode(constant.Code405))
+		api.Message(w, object.ByCode(config.Code405))
 		return
 	}
 	// need session always to continue
 	if !ck.Session {
-		api.Message(w, object.ByText(nil, constant.AccessDenied))
+		api.Message(w, object.ByText(nil, config.AccessDenied))
 		return
 	}
 	// limit to read 32Mb
@@ -114,11 +114,11 @@ func (hp *hPost) CreatePost(ctx context.Context, ck *object.Cookie, sts object.S
 	hp.get(ctx, ck, w)
 }
 
-func (hp *hPost) CreateComment(ctx context.Context, ck *object.Cookie, sts object.Status,
+func (hp *hPost) CreateComment(ctx context.Context, ck *object.CookieInfo, sts object.Status,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	log.Println(r.Method, " ", r.URL.Path)
-	ctx, cancel := context.WithTimeout(ctx, constant.TimeLimit)
+	ctx, cancel := context.WithTimeout(ctx, config.TimeLimit10s)
 	defer cancel()
 	// check errors in cookie
 	if sts != nil {
@@ -126,12 +126,12 @@ func (hp *hPost) CreateComment(ctx context.Context, ck *object.Cookie, sts objec
 		return
 	}
 	if r.Method != "POST" {
-		api.Message(w, object.ByCode(constant.Code405))
+		api.Message(w, object.ByCode(config.Code405))
 		return
 	}
 	// need session always to continue
 	if !ck.Session {
-		api.Message(w, object.ByText(nil, constant.AccessDenied))
+		api.Message(w, object.ByText(nil, config.AccessDenied))
 		return
 	}
 	// create DTO with a new comment
@@ -151,11 +151,11 @@ func (hp *hPost) CreateComment(ctx context.Context, ck *object.Cookie, sts objec
 	hp.get(ctx, ck, w)
 }
 
-func (hp *hPost) CreateRatio(ctx context.Context, ck *object.Cookie, sts object.Status,
+func (hp *hPost) CreateRatio(ctx context.Context, ck *object.CookieInfo, sts object.Status,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	log.Println(r.Method, " ", r.URL.Path)
-	ctx, cancel := context.WithTimeout(ctx, constant.TimeLimit)
+	ctx, cancel := context.WithTimeout(ctx, config.TimeLimit10s)
 	defer cancel()
 	// check errors in cookie
 	if sts != nil {
@@ -163,12 +163,12 @@ func (hp *hPost) CreateRatio(ctx context.Context, ck *object.Cookie, sts object.
 		return
 	}
 	if r.Method != "GET" {
-		api.Message(w, object.ByCode(constant.Code405))
+		api.Message(w, object.ByCode(config.Code405))
 		return
 	}
 	// need session always to continue
 	if !ck.Session {
-		api.Message(w, object.ByText(nil, constant.AccessDenied))
+		api.Message(w, object.ByText(nil, config.AccessDenied))
 		return
 	}
 	// create DTO with a new rate
@@ -185,7 +185,7 @@ func (hp *hPost) CreateRatio(ctx context.Context, ck *object.Cookie, sts object.
 		return
 	}
 	// check valid id for refer page
-	postID := dto.NewCheckIDAtoi(constant.KeyPost, ck.PostString)
+	postID := dto.NewCheckIDAtoi(config.KeyPost, ck.PostString)
 	idWho, sts := hp.sMiddleware.GetID(ctx, postID)
 	if sts != nil {
 		api.Message(w, sts)
@@ -197,7 +197,7 @@ func (hp *hPost) CreateRatio(ctx context.Context, ck *object.Cookie, sts object.
 	hp.get(ctx, ck, w)
 }
 
-func (hp *hPost) get(ctx context.Context, ck *object.Cookie, w http.ResponseWriter) {
+func (hp *hPost) get(ctx context.Context, ck *object.CookieInfo, w http.ResponseWriter) {
 	// parse
 	pe, sts := api.NewParseExecute("post").Parse()
 	if sts != nil {
@@ -205,13 +205,13 @@ func (hp *hPost) get(ctx context.Context, ck *object.Cookie, w http.ResponseWrit
 		return
 	}
 	// link for "form action" submit
-	pe.Data["RatioLink"] = constant.URLReadRatio
+	pe.Data["RatioLink"] = config.URLReadRatio
 	// insert session
 	pe.Data["Session"] = ck.Session
 	// create new model posts
 	p := model.NewPosts(nil, ck)
 	// make keys for sort posts
-	p.MakeKeys(constant.KeyPost)
+	p.MakeKeys(config.KeyPost)
 	// insert posts
 	pe.Data["Posts"], sts = hp.service.Get(ctx, p)
 	if sts != nil {
@@ -231,7 +231,7 @@ func (hp *hPost) get(ctx context.Context, ck *object.Cookie, w http.ResponseWrit
 	// create new model comments
 	cm := model.NewComments(nil, ck)
 	// make keys for sort posts
-	cm.MakeKeys(constant.KeyPost)
+	cm.MakeKeys(config.KeyPost)
 	// insert comments
 	pe.Data["Comments"], sts = hp.sComment.Get(ctx, cm)
 	if sts != nil {
@@ -239,5 +239,5 @@ func (hp *hPost) get(ctx context.Context, ck *object.Cookie, w http.ResponseWrit
 		return
 	}
 	// execute
-	pe.Execute(w, constant.Code200)
+	pe.Execute(w, config.Code200)
 }

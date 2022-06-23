@@ -1,17 +1,17 @@
 package model
 
 import (
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 )
 
 type Categories struct {
 	Slice []*Category
 	St    *object.Settings
-	Ck    *object.Cookie
+	Ck    *object.CookieInfo
 }
 
-func NewCategories(st *object.Settings, ck *object.Cookie) *Categories {
+func NewCategories(st *object.Settings, ck *object.CookieInfo) *Categories {
 	p := new(Categories)
 	if st == nil {
 		p.St = &object.Settings{
@@ -21,7 +21,7 @@ func NewCategories(st *object.Settings, ck *object.Cookie) *Categories {
 		p.St = st
 	}
 	if ck == nil {
-		p.Ck = new(object.Cookie)
+		p.Ck = new(object.CookieInfo)
 	} else {
 		p.Ck = ck
 	}
@@ -32,16 +32,16 @@ func (c *Categories) MakeKeys(key string, data ...interface{}) {
 	if key != "" {
 		c.St.Key[key] = data
 	} else {
-		c.St.Key[constant.KeyPost] = []interface{}{0}
+		c.St.Key[config.KeyPost] = []interface{}{0}
 	}
 }
 
 func (c *Categories) GetList() *object.QuerySettings {
 	qs := new(object.QuerySettings)
-	if value, ok := c.St.Key[constant.KeyPost]; ok {
-		qs.QueryName = constant.QueSelectCategoryBy
+	if value, ok := c.St.Key[config.KeyPost]; ok {
+		qs.QueryName = config.QueSelectCategoryBy
 		qs.QueryFields = []interface{}{
-			constant.FieldPost,
+			config.FieldPost,
 		}
 		if value == nil {
 			qs.Fields = []interface{}{0}
@@ -50,12 +50,12 @@ func (c *Categories) GetList() *object.QuerySettings {
 		}
 		return qs
 	}
-	if value, ok := c.St.Key[constant.KeyID]; ok {
-		qs.QueryName = constant.QueSelect
+	if value, ok := c.St.Key[config.KeyID]; ok {
+		qs.QueryName = config.QueSelect
 		qs.QueryFields = []interface{}{
-			constant.TabCategories,
-			constant.TabCategories,
-			constant.FieldID,
+			config.TabCategories,
+			config.TabCategories,
+			config.FieldID,
 		}
 		if value == nil {
 			qs.Fields = []interface{}{0}
@@ -65,14 +65,14 @@ func (c *Categories) GetList() *object.QuerySettings {
 		return qs
 	}
 	return &object.QuerySettings{
-		QueryName: constant.QueSelectCategories,
+		QueryName: config.QueSelectCategories,
 	}
 }
 
 func (c *Categories) NewList() []interface{} {
 	category := new(Category)
 	c.Slice = append(c.Slice, category)
-	if _, ok := c.St.Key[constant.KeyID]; ok {
+	if _, ok := c.St.Key[config.KeyID]; ok {
 		return []interface{}{
 			&category.ID,
 		}

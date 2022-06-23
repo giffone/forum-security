@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 )
 
@@ -24,10 +24,10 @@ type LikesCount struct {
 	Slice      []*LCount
 	PostOrComm int // current post_id or comment_id
 	St         *object.Settings
-	Ck         *object.Cookie
+	Ck         *object.CookieInfo
 }
 
-func NewLikesCount(st *object.Settings, ck *object.Cookie) *LikesCount {
+func NewLikesCount(st *object.Settings, ck *object.CookieInfo) *LikesCount {
 	lk := new(LikesCount)
 	if st == nil {
 		lk.St = &object.Settings{
@@ -37,7 +37,7 @@ func NewLikesCount(st *object.Settings, ck *object.Cookie) *LikesCount {
 		lk.St = st
 	}
 	if ck == nil {
-		lk.Ck = new(object.Cookie)
+		lk.Ck = new(object.CookieInfo)
 	} else {
 		lk.Ck = ck
 	}
@@ -48,36 +48,36 @@ func (lk *LikesCount) MakeKeys(key string, data ...interface{}) {
 	if key != "" {
 		lk.St.Key[key] = data
 	} else {
-		lk.St.Key[constant.KeyPost] = []interface{}{0}
+		lk.St.Key[config.KeyPost] = []interface{}{0}
 	}
 }
 
 // GetList configs query
 func (lk *LikesCount) GetList() *object.QuerySettings {
 	qs := new(object.QuerySettings)
-	qs.QueryName = constant.QueSelectLikeCountBy
-	if value, ok := lk.St.Key[constant.KeyPost]; ok {
+	qs.QueryName = config.QueSelectLikeCountBy
+	if value, ok := lk.St.Key[config.KeyPost]; ok {
 		qs.QueryFields = []interface{}{
-			constant.TabPostsLikes,
-			constant.TabPostsLikes,
-			constant.TabPostsLikes,
-			constant.FieldPost,
+			config.TabPostsLikes,
+			config.TabPostsLikes,
+			config.TabPostsLikes,
+			config.FieldPost,
 		}
 		qs.Fields = value
-	} else if value, ok := lk.St.Key[constant.KeyComment]; ok {
+	} else if value, ok := lk.St.Key[config.KeyComment]; ok {
 		qs.QueryFields = []interface{}{
-			constant.TabCommentsLikes,
-			constant.TabCommentsLikes,
-			constant.TabCommentsLikes,
-			constant.FieldComment,
+			config.TabCommentsLikes,
+			config.TabCommentsLikes,
+			config.TabCommentsLikes,
+			config.FieldComment,
 		}
 		qs.Fields = value
 	} else {
 		qs.QueryFields = []interface{}{
-			constant.TabPostsLikes,
-			constant.TabPostsLikes,
-			constant.TabPostsLikes,
-			constant.FieldPost,
+			config.TabPostsLikes,
+			config.TabPostsLikes,
+			config.TabPostsLikes,
+			config.FieldPost,
 		}
 		qs.Fields = []interface{}{0} // for null list
 	}
@@ -119,7 +119,7 @@ func (lk *LikesCount) Return() *Buf {
 func (lk *LikesCount) LikeNil() *LCount {
 	return &LCount{
 		Like:       1,
-		Body:       constant.FieldLike,
+		Body:       config.FieldLike,
 		Count:      0,
 		Session:    lk.Ck.Session,
 		AllPost:    lk.St.AllPost,
@@ -130,7 +130,7 @@ func (lk *LikesCount) LikeNil() *LCount {
 func (lk *LikesCount) DislikeNil() *LCount {
 	return &LCount{
 		Like:       2,
-		Body:       constant.FieldDislike,
+		Body:       config.FieldDislike,
 		Count:      0,
 		Session:    lk.Ck.Session,
 		AllPost:    lk.St.AllPost,

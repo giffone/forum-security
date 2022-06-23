@@ -1,5 +1,5 @@
 run :
-	go run cmd/forumsqlite/main.go
+	go run cmd/forumsqlite/main.go --tags sqlite_userauth o auth
 
 docker :
 	docker image build -f dockerfile . -t forumsqlite

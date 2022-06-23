@@ -6,30 +6,30 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/giffone/forum-security/internal/adapters/authentication"
 	"github.com/giffone/forum-security/internal/adapters/repository"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
+	"github.com/giffone/forum-security/internal/server"
 	"github.com/giffone/forum-security/pkg/paths"
 )
 
 type App struct {
-	router *http.ServeMux
-	ctx    context.Context
+	mux *http.ServeMux
+	ctx context.Context
 }
 
 func NewApp(ctx context.Context) *App {
 	return &App{
-		ctx:    ctx,
-		router: http.NewServeMux(),
+		ctx: ctx,
+		mux: http.NewServeMux(),
 	}
 }
 
-func (a *App) Run(driver string) (*sql.DB, *http.ServeMux, string) {
+func (a *App) Run(driver string) (*sql.DB, *http.Server) {
 	repo := switcher(a.ctx, driver)
 	db, port, _ := repo.ExportSettings()
 
-	home := fmt.Sprintf("%s%s", constant.HomePage, port)
-	tokens := authentication.NewSocialToken(home)
+	home := fmt.Sprintf("%s%s", config.HomePage, port)
+	tokens := config.NewSocialToken(home)
 
 	srvMiddleware, apiMiddleware := a.middlewareService(repo)
 	srvFile := a.file(repo)
@@ -52,16 +52,18 @@ func (a *App) Run(driver string) (*sql.DB, *http.ServeMux, string) {
 
 	dir := http.Dir("internal/web/assets")
 	dirHandler := http.StripPrefix("/assets/", http.FileServer(dir))
-	a.router.Handle("/assets/", dirHandler)
+	a.mux.Handle("/assets/", dirHandler)
 
 	// need to create paths
 	paths.CreatePaths("internal/web/assets/images/post")
 	paths.CreatePaths("internal/web/assets/images/avatar")
+	paths.CreatePaths("cert")
 
 	// FOR TEST ONLY
 	_, _, schema := repo.ExportSettings()
 	repository.NewLoremIpsum().Run(db, schema)
 	// FOR TEST ONLY
+	srv := server.NewServerTLS(a.mux, port)
 
-	return db, a.router, port
+	return db, srv
 }

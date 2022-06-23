@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 )
 
@@ -20,10 +20,10 @@ type Post struct {
 	Liked      any
 	Image      any
 	St         *object.Settings
-	Ck         *object.Cookie
+	Ck         *object.CookieInfo
 }
 
-func NewPost(st *object.Settings, ck *object.Cookie) *Post {
+func NewPost(st *object.Settings, ck *object.CookieInfo) *Post {
 	p := new(Post)
 	if st == nil {
 		p.St = &object.Settings{
@@ -33,7 +33,7 @@ func NewPost(st *object.Settings, ck *object.Cookie) *Post {
 		p.St = st
 	}
 	if ck == nil {
-		p.Ck = new(object.Cookie)
+		p.Ck = new(object.CookieInfo)
 	} else {
 		p.Ck = ck
 	}
@@ -44,18 +44,18 @@ func (p *Post) MakeKeys(key string, data ...interface{}) {
 	if key != "" {
 		p.St.Key[key] = data
 	} else {
-		p.St.Key[constant.KeyPost] = []interface{}{0}
+		p.St.Key[config.KeyPost] = []interface{}{0}
 	}
 }
 
 func (p *Post) Get() *object.QuerySettings {
 	qs := new(object.QuerySettings)
-	qs.QueryName = constant.QueSelectPostsBy
+	qs.QueryName = config.QueSelectPostsBy
 	qs.QueryFields = []interface{}{
-		constant.TabPosts,
-		constant.FieldID,
+		config.TabPosts,
+		config.FieldID,
 	}
-	if value, ok := p.St.Key[constant.KeyPost]; ok {
+	if value, ok := p.St.Key[config.KeyPost]; ok {
 		qs.Fields = value
 	} else {
 		qs.Fields = []interface{}{0} // for null list

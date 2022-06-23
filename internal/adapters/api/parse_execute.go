@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 )
 
@@ -22,10 +22,10 @@ func NewParseExecute(define string) *ParseExecute {
 	case "index":
 		return &ParseExecute{
 			PathTmpl: []string{
-				constant.PathIndex, constant.PathHeaderObj,
-				constant.PathFooterObj, constant.PathPostObj,
-				constant.PathCategoriesObj, constant.PathLikesObj,
-				constant.PathPostObj,
+				config.PathIndex, config.PathHeaderObj,
+				config.PathFooterObj, config.PathPostObj,
+				config.PathCategoriesObj, config.PathLikesObj,
+				config.PathPostObj,
 			},
 			DefineTmpl: define,
 			Data:       make(map[string]interface{}),
@@ -33,10 +33,10 @@ func NewParseExecute(define string) *ParseExecute {
 	case "post":
 		return &ParseExecute{
 			PathTmpl: []string{
-				constant.PathPost, constant.PathHeaderObj,
-				constant.PathPostObj, constant.PathCategoriesObj,
-				constant.PathCommentsObj, constant.PathLikesObj,
-				constant.PathFooterObj,
+				config.PathPost, config.PathHeaderObj,
+				config.PathPostObj, config.PathCategoriesObj,
+				config.PathCommentsObj, config.PathLikesObj,
+				config.PathFooterObj,
 			},
 			DefineTmpl: define,
 			Data:       make(map[string]interface{}),
@@ -44,23 +44,23 @@ func NewParseExecute(define string) *ParseExecute {
 	case "account":
 		return &ParseExecute{
 			PathTmpl: []string{
-				constant.PathAccount, constant.PathAccountUser,
-				constant.PathHeaderObj, constant.PathPostObj,
-				constant.PathCategoriesObj, constant.PathCommentsObj,
-				constant.PathLikesObj, constant.PathFooterObj,
+				config.PathAccount, config.PathAccountUser,
+				config.PathHeaderObj, config.PathPostObj,
+				config.PathCategoriesObj, config.PathCommentsObj,
+				config.PathLikesObj, config.PathFooterObj,
 			},
 			DefineTmpl: define,
 			Data:       make(map[string]interface{}),
 		}
 	case "login":
 		return &ParseExecute{
-			PathTmpl:   []string{constant.PathLoginObj},
+			PathTmpl:   []string{config.PathLoginObj},
 			DefineTmpl: define,
 			Data:       make(map[string]interface{}),
 		}
 	case "message":
 		return &ParseExecute{
-			PathTmpl:   []string{constant.PathMessage},
+			PathTmpl:   []string{config.PathMessage},
 			DefineTmpl: define,
 			Data:       make(map[string]interface{}),
 		}
@@ -73,18 +73,18 @@ func NewParseExecute(define string) *ParseExecute {
 
 func (pe *ParseExecute) Parse() (*ParseExecute, object.Status) {
 	if pe.DefineTmpl == "nil" {
-		return nil, object.ByCodeAndLog(constant.Code500,
+		return nil, object.ByCodeAndLog(config.Code500,
 			nil, "parseFile: unknown define")
 	}
 	var err error
 	myFunc := template.FuncMap{
 		"dateForum": func(t time.Time) string {
-			return t.Format(constant.ForumLayoutDate)
+			return t.Format(config.ForumLayoutDate)
 		},
 	}
 	pe.tmpl, err = template.New("").Funcs(myFunc).ParseFiles(pe.PathTmpl...)
 	if err != nil {
-		return nil, object.ByCodeAndLog(constant.Code500,
+		return nil, object.ByCodeAndLog(config.Code500,
 			err, "parseFile:")
 	}
 	return pe, nil
@@ -99,7 +99,7 @@ func (pe *ParseExecute) Execute(w http.ResponseWriter, code int) {
 	err := pe.tmpl.ExecuteTemplate(w, pe.DefineTmpl, pe.Data)
 	// log.Printf("execute: w header is: %v", w)
 	if err != nil {
-		sts := object.ByCodeAndLog(constant.Code500,
+		sts := object.ByCodeAndLog(config.Code500,
 			err, "executeTemplate:")
 		Message(w, sts)
 	}

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 )
 
@@ -19,7 +19,7 @@ type Ratio struct {
 	Obj        object.Obj
 }
 
-func NewRatio(st *object.Settings, sts *object.Statuses, ck *object.Cookie) *Ratio {
+func NewRatio(st *object.Settings, sts *object.Statuses, ck *object.CookieInfo) *Ratio {
 	l := new(Ratio)
 	l.Obj.NewObjects(st, sts, ck)
 	return l
@@ -27,25 +27,25 @@ func NewRatio(st *object.Settings, sts *object.Statuses, ck *object.Cookie) *Rat
 
 func (r *Ratio) AddByPOST(request *http.Request) bool {
 	// ratio - like/dislike
-	rate := request.PostFormValue(constant.KeyRate)
-	if rate == constant.KeyLike {
+	rate := request.PostFormValue(config.KeyRate)
+	if rate == config.KeyLike {
 		r.Ratio = like
-	} else if rate == constant.KeyDislike {
+	} else if rate == config.KeyDislike {
 		r.Ratio = dislike
 	} else {
-		r.Obj.Sts.ByCodeAndLog(constant.Code400,
+		r.Obj.Sts.ByCodeAndLog(config.Code400,
 			nil, "dto: like: postFormValue is nil")
 		return false
 	}
 	// post or comment ID
-	postOrComm := constant.KeyPost
+	postOrComm := config.KeyPost
 	objID := request.PostFormValue(postOrComm)
 	if objID == "" {
-		postOrComm = constant.KeyComment
+		postOrComm = config.KeyComment
 		objID = request.PostFormValue(postOrComm)
 	}
 	if objID == "" {
-		r.Obj.Sts.ByCodeAndLog(constant.Code400,
+		r.Obj.Sts.ByCodeAndLog(config.Code400,
 			nil, "dto: like: post or comment id is nil")
 		return false
 	}
@@ -64,25 +64,25 @@ func (r *Ratio) AddByGET(request *http.Request) bool {
 	// read url
 	u := request.URL.Query()
 	// ratio - like/dislike
-	rate := u.Get(constant.KeyRate)
-	if rate == constant.KeyLike {
+	rate := u.Get(config.KeyRate)
+	if rate == config.KeyLike {
 		r.Ratio = like
-	} else if rate == constant.KeyDislike {
+	} else if rate == config.KeyDislike {
 		r.Ratio = dislike
 	} else {
-		r.Obj.Sts.ByCodeAndLog(constant.Code400,
+		r.Obj.Sts.ByCodeAndLog(config.Code400,
 			nil, "dto: like: postFormValue is nil")
 		return false
 	}
 	// post or comment ID
-	postOrComm := constant.KeyPost
+	postOrComm := config.KeyPost
 	objID := u.Get(postOrComm)
 	if objID == "" {
-		postOrComm = constant.KeyComment
+		postOrComm = config.KeyComment
 		objID = u.Get(postOrComm)
 	}
 	if objID == "" {
-		r.Obj.Sts.ByCodeAndLog(constant.Code400,
+		r.Obj.Sts.ByCodeAndLog(config.Code400,
 			nil, "dto: like: post or comment id is nil")
 		return false
 	}
@@ -95,39 +95,39 @@ func (r *Ratio) MakeKeys(key string, data ...interface{}) {
 	if key != "" {
 		r.Obj.St.Key[key] = data
 	} else {
-		r.Obj.St.Key[constant.KeyPost] = []interface{}{0}
+		r.Obj.St.Key[config.KeyPost] = []interface{}{0}
 	}
 }
 
 // Create prepares query for db and choose fields for adding incoming data
 func (r *Ratio) Create() *object.QuerySettings {
 	qs := new(object.QuerySettings)
-	qs.QueryName = constant.QueInsert4
-	if _, ok := r.Obj.St.Key[constant.KeyPost]; ok {
+	qs.QueryName = config.QueInsert4
+	if _, ok := r.Obj.St.Key[config.KeyPost]; ok {
 		qs.QueryFields = []interface{}{
-			constant.TabPostsLikes,
-			constant.FieldUser,
-			constant.FieldPost,
-			constant.FieldLike,
-			constant.FieldCreated,
+			config.TabPostsLikes,
+			config.FieldUser,
+			config.FieldPost,
+			config.FieldLike,
+			config.FieldCreated,
 		}
 		qs.Fields = []interface{}{
 			r.Obj.Ck.User,
-			r.PostOrComm[constant.KeyPost],
+			r.PostOrComm[config.KeyPost],
 			r.Ratio,
 			time.Now(),
 		}
 	} else {
 		qs.QueryFields = []interface{}{
-			constant.TabCommentsLikes,
-			constant.FieldUser,
-			constant.FieldComment,
-			constant.FieldLike,
-			constant.FieldCreated,
+			config.TabCommentsLikes,
+			config.FieldUser,
+			config.FieldComment,
+			config.FieldLike,
+			config.FieldCreated,
 		}
 		qs.Fields = []interface{}{
 			r.Obj.Ck.User,
-			r.PostOrComm[constant.KeyComment],
+			r.PostOrComm[config.KeyComment],
 			r.Ratio,
 			time.Now(),
 		}
@@ -137,26 +137,26 @@ func (r *Ratio) Create() *object.QuerySettings {
 
 func (r *Ratio) Delete() *object.QuerySettings {
 	qs := new(object.QuerySettings)
-	qs.QueryName = constant.QueDeleteBy
-	if value, ok := r.Obj.St.Key[constant.KeyPost]; ok {
+	qs.QueryName = config.QueDeleteBy
+	if value, ok := r.Obj.St.Key[config.KeyPost]; ok {
 		qs.QueryFields = []interface{}{
-			constant.TabPostsLikes,
-			constant.TabPostsLikes,
-			constant.FieldID,
+			config.TabPostsLikes,
+			config.TabPostsLikes,
+			config.FieldID,
 		}
 		qs.Fields = value
-	} else if value, ok := r.Obj.St.Key[constant.KeyComment]; ok {
+	} else if value, ok := r.Obj.St.Key[config.KeyComment]; ok {
 		qs.QueryFields = []interface{}{
-			constant.TabCommentsLikes,
-			constant.TabCommentsLikes,
-			constant.FieldID,
+			config.TabCommentsLikes,
+			config.TabCommentsLikes,
+			config.FieldID,
 		}
 		qs.Fields = value // for null list
 	} else {
 		qs.QueryFields = []interface{}{
-			constant.TabCommentsLikes,
-			constant.TabCommentsLikes,
-			constant.FieldID,
+			config.TabCommentsLikes,
+			config.TabCommentsLikes,
+			config.FieldID,
 		}
 		qs.Fields = []interface{}{0} // for null list
 	}

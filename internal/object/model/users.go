@@ -7,7 +7,7 @@ import (
 type Users struct {
 	Users []*User
 	St    *object.Settings
-	Ck    *object.Cookie
+	Ck    *object.CookieInfo
 }
 
 //func NewUsers(st *object.Settings, ck *object.Cookie) *Users {

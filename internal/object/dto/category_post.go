@@ -1,7 +1,7 @@
 package dto
 
 import (
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 )
 
@@ -18,9 +18,11 @@ func NewCategoryPost() *CategoryPost {
 
 func (cp *CategoryPost) Create() *object.QuerySettings {
 	return &object.QuerySettings{
-		QueryName: constant.QueInsert2,
-		QueryFields: []interface{}{constant.TabPostsCategories,
-			constant.FieldPost, constant.FieldCategory},
+		QueryName: config.QueInsert2,
+		QueryFields: []interface{}{
+			config.TabPostsCategories,
+			config.FieldPost, config.FieldCategory,
+		},
 		Fields: []interface{}{
 			cp.Post,
 			cp.Category,

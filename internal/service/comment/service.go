@@ -2,8 +2,9 @@ package comment
 
 import (
 	"context"
+
 	"github.com/giffone/forum-security/internal/adapters/repository"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/dto"
 	"github.com/giffone/forum-security/internal/object/model"
@@ -17,7 +18,8 @@ type sComment struct {
 }
 
 func NewService(repo repository.Repo, sRatio service.Ratio,
-	sMiddleware service.Middleware) service.Comment {
+	sMiddleware service.Middleware,
+) service.Comment {
 	return &sComment{
 		repo:        repo,
 		sRatio:      sRatio,
@@ -26,11 +28,11 @@ func NewService(repo repository.Repo, sRatio service.Ratio,
 }
 
 func (sc *sComment) Create(ctx context.Context, d *dto.Comment) (int, object.Status) {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	// check valid postID
-	postID := dto.NewCheckIDAtoi(constant.KeyPost, d.Obj.Ck.PostString)
+	postID := dto.NewCheckIDAtoi(config.KeyPost, d.Obj.Ck.PostString)
 	idWho, sts := sc.sMiddleware.GetID(ctx, postID)
 	if sts != nil {
 		return 0, sts
@@ -49,7 +51,7 @@ func (sc *sComment) Delete(ctx context.Context, id int) object.Status {
 }
 
 func (sc *sComment) Get(ctx context.Context, m model.Models) (interface{}, object.Status) {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	sts := sc.repo.GetList(ctx2, m)
@@ -87,7 +89,7 @@ func (sc *sComment) Get(ctx context.Context, m model.Models) (interface{}, objec
 }
 
 func (sc *sComment) GetChan(ctx context.Context, m model.Models) (interface{}, object.Status) {
-	ctx2, cancel := context.WithTimeout(ctx, constant.TimeLimitDB)
+	ctx2, cancel := context.WithTimeout(ctx, config.TimeLimit5s)
 	defer cancel()
 
 	sts := sc.repo.GetList(ctx2, m)
@@ -132,7 +134,7 @@ func (sc *sComment) GetChan(ctx context.Context, m model.Models) (interface{}, o
 func (sc *sComment) refer(ctx context.Context, c *model.Comments) object.Status {
 	for i := 0; i < len(c.Slice); i++ {
 		p := model.NewPost(nil, nil)
-		p.MakeKeys(constant.KeyPost, c.Slice[i].Post)
+		p.MakeKeys(config.KeyPost, c.Slice[i].Post)
 		sts := sc.repo.GetOne(ctx, p)
 		if sts != nil {
 			return sts
@@ -145,7 +147,7 @@ func (sc *sComment) refer(ctx context.Context, c *model.Comments) object.Status 
 func (sc *sComment) referChan(ctx context.Context, c *model.Comments, channel chan object.Status) {
 	for i := 0; i < len(c.Slice); i++ {
 		p := model.NewPost(nil, nil)
-		p.MakeKeys(constant.KeyPost, c.Slice[i].Post)
+		p.MakeKeys(config.KeyPost, c.Slice[i].Post)
 		sts := sc.repo.GetOne(ctx, p)
 		if sts != nil {
 			channel <- sts

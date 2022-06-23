@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"log"
 
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/model"
 )
@@ -16,11 +16,11 @@ func Rows(rows *sql.Rows, m model.Models) object.Status {
 			if err == sql.ErrNoRows {
 				break
 			}
-			return object.ByCodeAndLog(constant.Code500, err, "rows")
+			return object.ByCodeAndLog(config.Code500, err, "rows")
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return object.ByCodeAndLog(constant.Code500, err, "rows: end with")
+		return object.ByCodeAndLog(config.Code500, err, "rows: end with")
 	}
 	return nil
 }
@@ -32,7 +32,7 @@ func Row(row *sql.Row, m model.Model) object.Status {
 			if err == sql.ErrNoRows {
 				return nil
 			} else {
-				return object.ByCodeAndLog(constant.Code500, err, "row")
+				return object.ByCodeAndLog(config.Code500, err, "row")
 			}
 		}
 	}

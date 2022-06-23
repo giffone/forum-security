@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/giffone/forum-security/internal/adapters/api"
-	"github.com/giffone/forum-security/internal/constant"
+	"github.com/giffone/forum-security/internal/config"
 	"github.com/giffone/forum-security/internal/object"
 	"github.com/giffone/forum-security/internal/object/model"
 	"github.com/giffone/forum-security/internal/service"
@@ -27,12 +27,12 @@ func NewHandler(sPost service.Post, sCategory service.Category) api.Handler {
 }
 
 func (hh *hHome) Register(ctx context.Context, router *http.ServeMux, session api.Middleware) {
-	router.HandleFunc(constant.URLHome, session.CheckSession(ctx, hh.Home))
-	router.HandleFunc(constant.URLFavicon, hh.Favicon)
-	router.HandleFunc(constant.URLCategoryBy, session.CheckSession(ctx, hh.ByCategory))
+	router.HandleFunc(config.URLHome, session.CheckSession(ctx, hh.Home))
+	router.HandleFunc(config.URLFavicon, hh.Favicon)
+	router.HandleFunc(config.URLCategoryBy, session.CheckSession(ctx, hh.ByCategory))
 }
 
-func (hh *hHome) Home(ctx context.Context, ck *object.Cookie, sts object.Status,
+func (hh *hHome) Home(ctx context.Context, ck *object.CookieInfo, sts object.Status,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	log.Println(r.Method, " ", r.URL.Path)
@@ -42,11 +42,11 @@ func (hh *hHome) Home(ctx context.Context, ck *object.Cookie, sts object.Status,
 		return
 	}
 	if r.Method != "GET" {
-		api.Message(w, object.ByCode(constant.Code405))
+		api.Message(w, object.ByCode(config.Code405))
 		return
 	}
 	if r.URL.Path != "/" {
-		api.Message(w, object.ByCode(constant.Code404))
+		api.Message(w, object.ByCode(config.Code404))
 		return
 	}
 	posts := model.NewPosts(nil, ck)
@@ -54,7 +54,7 @@ func (hh *hHome) Home(ctx context.Context, ck *object.Cookie, sts object.Status,
 	hh.get(ctx, posts, w)
 }
 
-func (hh *hHome) ByCategory(ctx context.Context, ck *object.Cookie, sts object.Status,
+func (hh *hHome) ByCategory(ctx context.Context, ck *object.CookieInfo, sts object.Status,
 	w http.ResponseWriter, r *http.Request,
 ) {
 	log.Println(r.Method, " ", r.URL.Path)
@@ -64,19 +64,19 @@ func (hh *hHome) ByCategory(ctx context.Context, ck *object.Cookie, sts object.S
 		return
 	}
 	if r.Method != "GET" {
-		api.Message(w, object.ByCode(constant.Code405))
+		api.Message(w, object.ByCode(config.Code405))
 		return
 	}
 	// get id category from url
-	id, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, constant.URLCategoryBy))
+	id, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, config.URLCategoryBy))
 	if err != nil || id == 0 {
-		sts := object.ByCodeAndLog(constant.Code400,
+		sts := object.ByCodeAndLog(config.Code400,
 			err, "handler: postFormValue: atoi")
 		api.Message(w, sts)
 		return
 	}
 	posts := model.NewPosts(nil, ck)
-	posts.MakeKeys(constant.KeyCategory, id)
+	posts.MakeKeys(config.KeyCategory, id)
 	posts.St.AllPost = true
 	hh.get(ctx, posts, w)
 }
@@ -89,7 +89,7 @@ func (hh *hHome) Favicon(w http.ResponseWriter, r *http.Request) {
 }
 
 func (hh *hHome) get(ctx context.Context, m model.Models, w http.ResponseWriter) {
-	ctx, cancel := context.WithTimeout(ctx, constant.TimeLimit)
+	ctx, cancel := context.WithTimeout(ctx, config.TimeLimit10s)
 	defer cancel()
 	// parse
 	pe, sts := api.NewParseExecute("index").Parse()
@@ -114,5 +114,5 @@ func (hh *hHome) get(ctx context.Context, m model.Models, w http.ResponseWriter)
 		return
 	}
 	// execute
-	pe.Execute(w, constant.Code200)
+	pe.Execute(w, config.Code200)
 }
